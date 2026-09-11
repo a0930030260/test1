@@ -1,5 +1,16 @@
 <html lang="zh-TW">
 <head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#AA151B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BuenCamino">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Camino Timer</title>
@@ -8,17 +19,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-cream: #EFE7DA;
-    --header-dark: #2B1810;
-    --panel-dark: #23120B;
-    --inner-dark: #150A05;
-    --btn-start-bg: #8B2014;
+    /* 溫和厚重的大地色系 */
+    --bg-cream: #EFE7DA;         /* 厚重暖燕麥色 */
+    --header-dark: #2B1810;      /* 深沉濃黑咖啡色 */
+    --panel-dark: #23120B;       /* 更深沉的面板底色 */
+    --inner-dark: #150A05;       /* 翻頁鐘內部極深底色 */
+    
+    /* 按鈕顏色：高對比與厚重質感 */
+    --btn-start-bg: #8B2014;     /* 溫暖厚重的復古磚紅 */
     --btn-start-border: #5A110B;
-    --btn-rest-bg: #D48439;
+    
+    --btn-rest-bg: #D48439;      /* 溫和厚重的琥珀焦糖橙 */
     --btn-rest-border: #96541D;
-    --btn-resting-bg: #A35017;
-    --btn-stop-bg: #7C706B;
+    
+    --btn-resting-bg: #A35017;   /* 暫停中：更深濃的焦糖色 */
+    
+    --btn-stop-bg: #7C706B;      /* 厚重復古泥灰岩 */
     --btn-stop-border: #524844;
+    
     --accent-yellow: #E5A93C;
     --text-gold: #DCA048;
     --text-cream: #F7F3EB;
@@ -57,6 +75,7 @@
     gap: 12px;
   }
 
+  /* 頂部 Header */
   .header-nav {
     width: 100%;
     height: 48px;
@@ -80,6 +99,7 @@
     text-align: center;
   }
 
+  /* 像素動畫區 */
   .pixel-stage {
     position: relative;
     width: 100%;
@@ -118,6 +138,7 @@
     z-index: 10;
   }
 
+  /* 自選收合清單區 (Accordions) */
   .route-picker-container {
     width: 100%;
     display: flex;
@@ -133,7 +154,9 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .picker-card.has-value { border-color: #723C13; }
+  .picker-card.has-value {
+    border-color: #723C13;
+  }
 
   .picker-header {
     height: 40px;
@@ -171,7 +194,9 @@
     transition: transform 0.2s ease;
   }
 
-  .picker-card.open .picker-arrow { transform: rotate(180deg); }
+  .picker-card.open .picker-arrow {
+    transform: rotate(180deg);
+  }
 
   .picker-dropdown {
     display: none;
@@ -181,7 +206,9 @@
     background: #FAF6EF;
   }
 
-  .picker-card.open .picker-dropdown { display: block; }
+  .picker-card.open .picker-dropdown {
+    display: block;
+  }
 
   .option-item {
     padding: 10px 14px;
@@ -193,13 +220,16 @@
     transition: background 0.15s ease;
   }
 
-  .option-item:last-child { border-bottom: none; }
+  .option-item:last-child {
+    border-bottom: none;
+  }
 
   .option-item:active, .option-item.selected {
     background: #D89249;
     color: #FFFDF8;
   }
 
+  /* 翻頁鐘主面板 */
   .clock-container {
     width: 100%;
     background-color: var(--panel-dark);
@@ -217,7 +247,7 @@
   .flip-clock {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
   }
 
   .flip-unit-group {
@@ -226,16 +256,19 @@
     align-items: center;
   }
 
-  .flip-pair { display: flex; gap: 2px; }
+  .flip-pair {
+    display: flex;
+    gap: 2px;
+  }
 
   .flip-card {
     position: relative;
-    width: 38px;
-    height: 56px;
+    width: 30px;
+    height: 46px;
     font-family: var(--font-ui);
-    font-size: 36px;
+    font-size: 28px;
     font-weight: 900;
-    line-height: 56px;
+    line-height: 46px;
     text-align: center;
     background: var(--inner-dark);
     color: var(--text-cream);
@@ -254,7 +287,7 @@
   }
 
   .flip-card .top, .flip-card .active-top {
-    top: 0; line-height: 56px;
+    top: 0; line-height: 46px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
     border-top-left-radius: 6px; border-top-right-radius: 6px;
   }
@@ -281,10 +314,10 @@
   @keyframes flip-bottom { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0deg); } }
 
   .clock-colon {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 900;
     color: var(--btn-rest-bg);
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
 
   .unit-label {
@@ -295,6 +328,7 @@
     margin-top: 4px;
   }
 
+  /* 累積休息時間 bar */
   .rest-bar {
     width: 100%;
     height: 36px;
@@ -311,6 +345,7 @@
   .rest-bar-title { font-size: 11px; font-weight: 800; color: #B0A097; }
   .rest-bar-time { font-size: 13px; font-weight: 800; color: var(--text-cream); }
 
+  /* 控制按鈕區 */
   .controls-stack {
     display: flex;
     flex-direction: column;
@@ -392,6 +427,7 @@
     transform: none !important;
   }
 
+  /* 整合式歷史與刪除紀錄區塊 */
   .history-section {
     width: 100%;
     display: flex;
@@ -514,10 +550,12 @@
 <body>
 
 <div class="app-container">
+  <!-- Header -->
   <div class="header-nav">
     <div class="brand-title">CAMINO TIMER</div>
   </div>
 
+  <!-- 像素視差動畫背景 -->
   <div class="pixel-stage" id="pixelStage">
     <div class="parallax-layer layer-far">
       <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
@@ -581,6 +619,7 @@
     </svg>
   </div>
 
+  <!-- 起點與終點 自選收合清單 -->
   <div class="route-picker-container">
     <div class="picker-card" id="startPickerCard">
       <div class="picker-header" onclick="togglePicker('start')">
@@ -605,6 +644,7 @@
     </div>
   </div>
 
+  <!-- 計時鐘 -->
   <div class="clock-container">
     <div class="flip-clock">
       <div class="flip-unit-group">
@@ -638,12 +678,14 @@
     </div>
   </div>
 
+  <!-- 控制按鈕區 -->
   <div class="controls-stack">
     <button id="btnStart" class="btn btn-start" onclick="startTimer()">開始計時</button>
     <button id="btnRest" class="btn btn-rest" onclick="toggleRest()" disabled>PAUSE / REST</button>
     <button id="btnStop" class="btn btn-stop" onclick="stopTimer()" disabled>完成紀錄</button>
   </div>
 
+  <!-- 行走紀錄與刪除 -->
   <div class="history-section">
     <div class="section-header">
       <span class="section-title">行走紀錄</span>
@@ -663,11 +705,14 @@
     "O Pedrouzo", "Santiago"
   ];
 
+  // 清除舊無效格式紀錄並載入合法紀錄
   let records = [];
   try {
     const raw = JSON.parse(localStorage.getItem('camino_records') || '[]');
     records = Array.isArray(raw) ? raw.filter(r => r && r.route && r.startDate && typeof r.duration === 'number') : [];
-  } catch (e) { records = []; }
+  } catch (e) {
+    records = [];
+  }
 
   let selectedStart = "", selectedEnd = "";
   let isTiming = false, isResting = false;
@@ -675,14 +720,32 @@
   let timerInterval = null, prevStr = "000000";
   let spriteFrame = 0, spriteInterval = null;
 
-  const walkerGroup = document.getElementById('walkerGroup');
+  // --- 方案 1：媒體卡片背景播放元件設定 ---
+  const silentAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+  silentAudio.loop = true;
 
-  // iOS Native Bridge 通訊封裝
-  function notifyNative(action, payload = {}) {
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-      window.Capacitor.toNative('LiveActivityBridge', action, payload);
+  function updateMediaSession(resting) {
+    if ('mediaSession' in navigator) {
+      const routeName = `${selectedStart || '未定起點'} ➔ ${selectedEnd || '未定終點'}`;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: routeName,
+        artist: resting ? "⏸️ 休息中" : "🏃 Camino 計時中...",
+        album: "Camino Timer",
+        artwork: [
+          { src: 'https://a0930030260.github.io/BUENCAM1N0/favicon.ico', sizes: '96x96', type: 'image/png' }
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (isTiming && isResting) toggleRest();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isTiming && !isResting) toggleRest();
+      });
     }
   }
+
+  const walkerGroup = document.getElementById('walkerGroup');
 
   function drawWalker(state, frame) {
     const skinColor = "#E0B392";
@@ -735,7 +798,8 @@
     const startDropdown = document.getElementById('startDropdown');
     const endDropdown = document.getElementById('endDropdown');
 
-    startDropdown.innerHTML = ''; endDropdown.innerHTML = '';
+    startDropdown.innerHTML = '';
+    endDropdown.innerHTML = '';
 
     if (!selectedStart && stations.length > 0) selectedStart = stations[0];
     if (!selectedEnd && stations.length > 1) selectedEnd = stations[1];
@@ -820,6 +884,11 @@
     isTiming = true; isResting = false;
     startTime = new Date(); totalPauseTime = 0;
 
+    // 啟動背景播放與 iOS 卡片
+    silentAudio.play().then(() => {
+      updateMediaSession(false);
+    }).catch(err => console.log("無聲音訊啟動失敗:", err));
+
     document.getElementById('startPickerCard').classList.remove('open');
     document.getElementById('endPickerCard').classList.remove('open');
 
@@ -830,12 +899,6 @@
     document.getElementById('pixelStage').classList.add('anim-running');
     spriteInterval = setInterval(() => { spriteFrame++; drawWalker('WALK', spriteFrame); }, 250);
     timerInterval = setInterval(tick, 1000);
-
-    // 啟動 iOS Live Activity 卡片
-    notifyNative('startActivity', {
-      routeName: `${selectedStart} ➔ ${selectedEnd}`,
-      startTimeTimestamp: startTime.getTime() / 1000
-    });
   }
 
   function tick() {
@@ -871,6 +934,8 @@
       drawWalker('REST', 0);
       btnRest.classList.add('resting');
       btnRest.innerText = 'RESUME (繼續)';
+      
+      updateMediaSession(true);
     } else {
       isResting = false;
       totalPauseTime += (new Date() - restStartTime);
@@ -878,18 +943,21 @@
       spriteInterval = setInterval(() => { spriteFrame++; drawWalker('WALK', spriteFrame); }, 250);
       btnRest.classList.remove('resting');
       btnRest.innerText = 'PAUSE / REST';
+      
+      updateMediaSession(false);
     }
-
-    // 更新 iOS Live Activity 狀態
-    notifyNative('updateActivity', {
-      restTimeString: fmtMS(totalPauseTime),
-      isResting: isResting
-    });
   }
 
   function stopTimer() {
     const endTime = new Date();
     if (isResting) totalPauseTime += (endTime - restStartTime);
+
+    // 停止背景音訊並移除媒體卡片
+    silentAudio.pause();
+    silentAudio.currentTime = 0;
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = null;
+    }
 
     clearInterval(timerInterval);
     clearInterval(spriteInterval);
@@ -915,9 +983,6 @@
     document.getElementById('btnRest').disabled = true;
     document.getElementById('btnRest').classList.remove('resting');
     document.getElementById('btnRest').innerText = 'PAUSE / REST';
-
-    // 關閉 iOS Live Activity 卡片
-    notifyNative('stopActivity');
 
     resetClockDisplay();
     renderRecords();
