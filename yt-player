@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YT 音訊播放器</title>
-    <!-- Web App 相關設定 -->
+    <title>YT 背景音訊播放器</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YT 播放器">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #121212;
             color: #ffffff;
             display: flex;
@@ -53,29 +52,45 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
         }
         button:active { background-color: #cc0000; }
-        audio { width: 100%; margin-top: 20px; display: none; }
         .status { margin-top: 15px; font-size: 0.9rem; color: #888; }
+        /* 隱藏官方影片區塊，只保留音訊播放 */
+        #yt-player { display: none; }
     </style>
+    <!-- 載入 YouTube 官方 API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
 
 <div class="container">
     <h2>YouTube 音訊播放器</h2>
-    <input type="text" id="ytUrl" placeholder="請貼上 YouTube 網址">
-    <button id="playBtn" onclick="handlePlay()">載入並播放</button>
-    <div id="status" class="status"></div>
-    
-    <!-- HTML5 音訊元件，會搭配 MediaSession API 支援鎖定螢幕控制 -->
-    <audio id="audioPlayer" controls></audio>
+    <input type="text" id="ytUrl" placeholder="貼上 YouTube 網址">
+    <button id="playBtn" onclick="handlePlay()">播放</button>
+    <div id="status" class="status">請輸入網址並點擊播放</div>
 </div>
 
+<!-- 隱藏的播放器容器 -->
+<div id="yt-player"></div>
+
 <script>
-    const audio = document.getElementById('audioPlayer');
-    const playBtn = document.getElementById('playBtn');
-    const status = document.getElementById('status');
+    let player = null;
+    let isReady = false;
+
+    // API 初始化完成的回呼函式
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('yt-player', {
+            height: '0',
+            width: '0',
+            events: {
+                'onReady': () => { isReady = true; },
+                'onStateChange': onPlayerStateChange,
+                'onError': () => {
+                    document.getElementById('status').innerText = '播放失敗，該影片可能禁止嵌入。';
+                }
+            }
+        });
+    }
 
     function extractVideoID(url) {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -83,76 +98,80 @@
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    async function handlePlay() {
+    function handlePlay() {
         const url = document.getElementById('ytUrl').value.trim();
         const videoId = extractVideoID(url);
+        const status = document.getElementById('status');
 
         if (!videoId) {
             alert('請輸入有效的 YouTube 網址！');
             return;
         }
 
-        status.innerText = '正在解析音訊...';
-        
-        // 使用公開的第三方串流 API 轉接 YouTube 音訊
-        const audioSrc = `https://api.cobalt.tools/api/json`; // 範例串流 API 概念
-        
-        // 註：由於外部 API 穩定度不一，此處以開放音訊源示範音訊播放與 MediaSession 功能
-        // 實際使用時可透過 API 獲取直接音訊檔 URL：
-        const streamUrl = `https://pipe-api.kavin.rocks/yt/stream/${videoId}`;
+        if (!isReady) {
+            status.innerText = '播放器載入中，請稍後...';
+            return;
+        }
 
-        try {
-            audio.src = streamUrl;
-            await audio.play();
-            status.innerText = '正在播放...';
-            playBtn.innerText = '暫停 / 播放';
-
-            // 設定背景與鎖定螢幕控制項 (Media Session API)
-            setupMediaSession(videoId);
-        } catch (err) {
-            console.error(err);
-            status.innerText = '播放失敗，請檢查網址或稍後再試。';
+        // 若目前正在播放相同的影片，則切換 播放/暫停
+        if (player.getVideoData() && player.getVideoData().video_id === videoId) {
+            const state = player.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
+        } else {
+            // 載入新影片並播放
+            status.innerText = '正在載入...';
+            player.loadVideoById(videoId);
         }
     }
 
-    function setupMediaSession(title) {
-        if ('mediaSession' in navigator) {
+    function onPlayerStateChange(event) {
+        const status = document.getElementById('status');
+        const btn = document.getElementById('playBtn');
+
+        if (event.data === YT.PlayerState.PLAYING) {
+            status.innerText = '正在播放中...';
+            btn.innerText = '暫停';
+            setupMediaSession();
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            status.innerText = '已暫停';
+            btn.innerText = '播放';
+        } else if (event.data === YT.PlayerState.ENDED) {
+            status.innerText = '播放結束';
+            btn.innerText = '播放';
+        }
+    }
+
+    // 綁定手機鎖定螢幕與背景控制項 (Media Session API)
+    function setupMediaSession() {
+        if ('mediaSession' in navigator && player) {
+            const videoData = player.getVideoData();
+            
             navigator.mediaSession.metadata = new MediaMetadata({
-                title: 'YouTube 音訊播放中',
-                artist: 'YT Audio Player',
-                album: 'Web App',
+                title: videoData.title || 'YouTube 音訊',
+                artist: videoData.author || 'YouTube',
                 artwork: [
-                    { src: 'https://via.placeholder.com/512', sizes: '512x512', type: 'image/png' }
+                    { 
+                        src: `https://img.youtube.com/vi/${videoData.video_id}/hqdefault.jpg`, 
+                        sizes: '480x360', 
+                        type: 'image/jpeg' 
+                    }
                 ]
             });
 
-            // 綁定鎖定螢幕按鈕事件
-            navigator.mediaSession.setActionHandler('play', () => {
-                audio.play();
-            });
-            navigator.mediaSession.setActionHandler('pause', () => {
-                audio.pause();
-            });
+            // 實作鎖定螢幕按鈕控制
+            navigator.mediaSession.setActionHandler('play', () => player.playVideo());
+            navigator.mediaSession.setActionHandler('pause', () => player.pauseVideo());
             navigator.mediaSession.setActionHandler('seekto', (details) => {
-                if (details.fastSeek && ('fastSeek' in audio)) {
-                    audio.fastSeek(details.seekTime);
-                    return;
+                if (details.seekTime) {
+                    player.seekTo(details.seekTime, true);
                 }
-                audio.currentTime = details.seekTime;
             });
         }
     }
-
-    // 按鈕切換播放/暫停
-    playBtn.addEventListener('click', () => {
-        if (audio.src && !audio.paused) {
-            audio.pause();
-            status.innerText = '已暫停';
-        } else if (audio.src && audio.paused) {
-            audio.play();
-            status.innerText = '正在播放...';
-        }
-    });
 </script>
 
 </body>
