@@ -55,29 +55,25 @@
         }
         button:active { background-color: #cc0000; }
         .status { margin-top: 15px; font-size: 0.9rem; color: #888; }
-        /* 隱藏官方影片區塊，只保留音訊播放 */
-        #yt-player { display: none; }
+        audio { width: 100%; margin-top: 15px; display: none; }
     </style>
-    <!-- 載入 YouTube 官方 API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
 
 <div class="container">
     <h2>YouTube 音訊播放器</h2>
     <input type="text" id="ytUrl" placeholder="貼上 YouTube 網址">
-    <button id="playBtn" onclick="handlePlay()">播放</button>
+    <button id="playBtn" onclick="handlePlay()">解析並播放</button>
     <div id="status" class="status">請輸入網址並點擊播放</div>
+    <audio id="audioPlayer" controls></audio>
 </div>
-
-<!-- 隱藏的播放器容器 -->
-<div id="yt-player"></div>
 
 <script>
     const audio = document.getElementById('audioPlayer');
     const playBtn = document.getElementById('playBtn');
     const status = document.getElementById('status');
 
+    // 備用代理伺服器清單，自動切換以防單一伺服器失效
     const instances = [
         'https://inv.iosbb.org',
         'https://invidious.nerdvpn.de',
@@ -99,6 +95,7 @@
             return;
         }
 
+        // 切換按鈕狀態（點擊切換播放/暫停）
         if (audio.src && !audio.paused) {
             audio.pause();
             status.innerText = '已暫停';
@@ -116,25 +113,26 @@
 
         let success = false;
 
+        // 輪詢可用節點，取得音訊檔
         for (const instance of instances) {
             try {
                 const res = await fetch(`${instance}/api/v1/videos/${videoId}`);
                 if (!res.ok) continue;
                 const data = await res.json();
 
+                // 篩選純音訊串流 (Audio Only)
                 const audioFormat = data.adaptiveFormats.find(f => f.type && f.type.includes('audio/webm')) || 
                                     data.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
 
                 if (audioFormat && audioFormat.url) {
                     audio.src = audioFormat.url;
                     audio.setAttribute('data-id', videoId);
-                    
-                    // 關鍵修正：確保播放請求由使用者點擊行為直接觸發
                     await audio.play();
 
                     status.innerText = `正在播放：${data.title}`;
                     playBtn.innerText = '暫停';
                     
+                    // 啟用手機鎖定螢幕控制項
                     setupMediaSession(data.title, data.author, data.videoThumbnails);
                     success = true;
                     break;
@@ -150,6 +148,7 @@
         }
     }
 
+    // 鎖定螢幕與背景控制功能 (Media Session API)
     function setupMediaSession(title, artist, thumbnails) {
         if ('mediaSession' in navigator) {
             let coverUrl = 'https://via.placeholder.com/512';
@@ -163,14 +162,15 @@
                 artwork: [{ src: coverUrl, sizes: '512x512', type: 'image/jpeg' }]
             });
 
-            // 綁定背景播放事件
             navigator.mediaSession.setActionHandler('play', () => {
                 audio.play();
                 playBtn.innerText = '暫停';
+                status.innerText = '正在播放...';
             });
             navigator.mediaSession.setActionHandler('pause', () => {
                 audio.pause();
                 playBtn.innerText = '播放';
+                status.innerText = '已暫停';
             });
             navigator.mediaSession.setActionHandler('seekto', (details) => {
                 if (details.seekTime) {
@@ -179,6 +179,12 @@
             });
         }
     }
+
+    // 監聽原生日誌變化
+    audio.onended = () => {
+        status.innerText = '播放結束';
+        playBtn.innerText = '解析並播放';
+    };
 </script>
 
 </body>
