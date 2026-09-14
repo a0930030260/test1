@@ -562,6 +562,57 @@
     background: rgba(255,255,255,0.4);
     border-radius: 12px;
   }
+
+
+
+function playCaminoMusic(shortcutName) {
+  // 檢測是否為 Apple 裝置 (iOS / macOS)
+  const isAppleDevice = /Mac|iPhone|iPod|iPad/.test(navigator.userAgent);
+
+  if (isAppleDevice) {
+    // 轉譯名稱（處理空格與中文編碼）並觸發捷徑
+    const encodedName = encodeURIComponent(shortcutName);
+    window.location.href = `shortcuts://run-shortcut?name=${encodedName}`;
+  } else {
+    // 非 Apple 裝置開啟 Apple Music 網頁版
+    window.open("https://music.apple.com", "_blank");
+  }
+}
+
+
+  
+
+
+.camino-music-btn {
+  background-color: #FA233C;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 25px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(250, 35, 60, 0.3);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  margin: 15px 0;
+}
+
+.camino-music-btn:hover {
+  background-color: #D91B32;
+  transform: translateY(-2px);
+}
+
+.camino-music-btn:active {
+  transform: translateY(1px);
+}
+
+
+
+  
 </style>
 </head>
 <body>
