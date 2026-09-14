@@ -1,1078 +1,159 @@
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#AA151B">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="BuenCamino">
-
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
-  }
-</script>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Camino Timer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    /* 溫和厚重的大地色系 */
-    --bg-cream: #EFE7DA;         /* 厚重暖燕麥色 */
-    --header-dark: #2B1810;      /* 深沉濃黑咖啡色 */
-    --panel-dark: #23120B;       /* 更深沉的面板底色 */
-    --inner-dark: #150A05;       /* 翻頁鐘內部極深底色 */
-    
-    /* 按鈕顏色：高對比與厚重質感 */
-    --btn-start-bg: #8B2014;     /* 溫暖厚重的復古磚紅 */
-    --btn-start-border: #5A110B;
-    
-    --btn-rest-bg: #D48439;      /* 溫和厚重的琥珀焦糖橙 */
-    --btn-rest-border: #96541D;
-    
-    --btn-resting-bg: #A35017;   /* 暫停中：更深濃的焦糖色 */
-    
-    --btn-stop-bg: #7C706B;      /* 厚重復古泥灰岩 */
-    --btn-stop-border: #524844;
-    
-    --accent-yellow: #E5A93C;
-    --text-gold: #DCA048;
-    --text-cream: #F7F3EB;
-    --font-title: 'Cinzel', serif;
-    --font-ui: 'Montserrat', system-ui, -apple-system, sans-serif;
-  }
-
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    white-space: nowrap;
-  }
-
-  html, body {
-    width: 100%;
-    height: 100%;
-    background-color: var(--bg-cream);
-    color: var(--header-dark);
-    font-family: var(--font-ui);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    overflow-x: hidden;
-  }
-
-  .app-container {
-    width: 100%;
-    max-width: 390px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  /* 頂部 Header */
-  .header-nav {
-    width: 100%;
-    height: 48px;
-    background-color: var(--header-dark);
-    border-radius: 18px;
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
-    border: 1px solid #3D251A;
-    flex-shrink: 0;
-  }
-
-  .brand-title {
-    font-family: var(--font-title);
-    font-size: 15px;
-    font-weight: 900;
-    color: var(--text-gold);
-    letter-spacing: 1px;
-    text-align: center;
-  }
-
-  /* 像素動畫區 */
-  .pixel-stage {
-    position: relative;
-    width: 100%;
-    height: 75px;
-    background: transparent;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .parallax-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 100%;
-    display: flex;
-  }
-
-  .layer-far { animation: move-bg 18s linear infinite; animation-play-state: paused; }
-  .layer-near { animation: move-bg 12s linear infinite; animation-play-state: paused; }
-  .layer-main { animation: move-bg 6s linear infinite; animation-play-state: paused; }
-
-  .anim-running .parallax-layer { animation-play-state: running; }
-
-  @keyframes move-bg {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-  .pixel-walker {
-    position: absolute;
-    bottom: 5px;
-    left: 45px;
-    width: 32px;
-    height: 38px;
-    z-index: 10;
-  }
-
-  /* 自選收合清單區 (Accordions) */
-  .route-picker-container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .picker-card {
-    background: #E2D7C5;
-    border: 2px solid #C4B59D;
-    border-radius: 14px;
-    overflow: hidden;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .picker-card.has-value {
-    border-color: #723C13;
-  }
-
-  .picker-header {
-    height: 40px;
-    padding: 0 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    background: transparent;
-  }
-
-  .picker-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: #6E5D54;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .picker-value-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .picker-value {
-    font-size: 13px;
-    font-weight: 800;
-    color: #2B1810;
-  }
-
-  .picker-arrow {
-    font-size: 10px;
-    color: #723C13;
-    transition: transform 0.2s ease;
-  }
-
-  .picker-card.open .picker-arrow {
-    transform: rotate(180deg);
-  }
-
-  .picker-dropdown {
-    display: none;
-    max-height: 140px;
-    overflow-y: auto;
-    border-top: 1px solid #C4B59D;
-    background: #FAF6EF;
-  }
-
-  .picker-card.open .picker-dropdown {
-    display: block;
-  }
-
-  .option-item {
-    padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 800;
-    color: #2B1810;
-    cursor: pointer;
-    border-bottom: 1px solid #EBE2D3;
-    transition: background 0.15s ease;
-  }
-
-  .option-item:last-child {
-    border-bottom: none;
-  }
-
-  .option-item:active, .option-item.selected {
-    background: #D89249;
-    color: #FFFDF8;
-  }
-
-  /* 翻頁鐘主面板 */
-  .clock-container {
-    width: 100%;
-    background-color: var(--panel-dark);
-    border-radius: 20px;
-    padding: 16px 10px 10px 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.25);
-    border: 1px solid #3D2217;
-    flex-shrink: 0;
-  }
-
-  .flip-clock {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .flip-unit-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .flip-pair {
-    display: flex;
-    gap: 2px;
-  }
-
-  .flip-card {
-    position: relative;
-    width: 30px;
-    height: 46px;
-    font-family: var(--font-ui);
-    font-size: 28px;
-    font-weight: 900;
-    line-height: 46px;
-    text-align: center;
-    background: var(--inner-dark);
-    color: var(--text-cream);
-    border-radius: 6px;
-    perspective: 200px;
-    box-shadow: inset 0 0 4px rgba(0,0,0,0.8);
-    flex-shrink: 0;
-  }
-
-  .flip-card .top, .flip-card .bottom,
-  .flip-card .active-top, .flip-card .active-bottom {
-    position: absolute;
-    left: 0; width: 100%; height: 50%;
-    overflow: hidden;
-    background: var(--inner-dark);
-  }
-
-  .flip-card .top, .flip-card .active-top {
-    top: 0; line-height: 46px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    border-top-left-radius: 6px; border-top-right-radius: 6px;
-  }
-
-  .flip-card .bottom, .flip-card .active-bottom {
-    bottom: 0; line-height: 0px;
-    border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;
-  }
-
-  .flip-card .active-top {
-    z-index: 2;
-    transform-origin: 50% 100%;
-    animation: flip-top 0.25s ease-in forwards;
-  }
-
-  .flip-card .active-bottom {
-    z-index: 2;
-    transform-origin: 50% 0%;
-    animation: flip-bottom 0.25s ease-out 0.25s forwards;
-    transform: rotateX(90deg);
-  }
-
-  @keyframes flip-top { 0% { transform: rotateX(0deg); } 100% { transform: rotateX(-90deg); } }
-  @keyframes flip-bottom { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0deg); } }
-
-  .clock-colon {
-    font-size: 18px;
-    font-weight: 900;
-    color: var(--btn-rest-bg);
-    margin-bottom: 12px;
-  }
-
-  .unit-label {
-    font-size: 9px;
-    font-weight: 900;
-    color: var(--btn-rest-bg);
-    letter-spacing: 0.5px;
-    margin-top: 4px;
-  }
-
-  /* 累積休息時間 bar */
-  .rest-bar {
-    width: 100%;
-    height: 36px;
-    background-color: var(--inner-dark);
-    border-radius: 10px;
-    padding: 0 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid #331A10;
-    flex-shrink: 0;
-  }
-
-  .rest-bar-title { font-size: 11px; font-weight: 800; color: #B0A097; }
-  .rest-bar-time { font-size: 13px; font-weight: 800; color: var(--text-cream); }
-
-  /* 控制按鈕區 */
-  .controls-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .btn {
-    width: 100%;
-    border: none;
-    font-family: var(--font-ui);
-    font-weight: 900;
-    border-radius: 16px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: all 0.15s ease;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .btn-start {
-    height: 48px;
-    background-color: var(--btn-start-bg);
-    color: var(--text-cream);
-    font-size: 15px;
-    border-bottom: 4px solid var(--btn-start-border);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.18);
-  }
-  .btn-start:not(:disabled):active {
-    border-bottom-width: 0px;
-    transform: translateY(4px);
-    box-shadow: none;
-  }
-
-  .btn-rest {
-    height: 60px;
-    background-color: var(--btn-rest-bg);
-    color: #1F0D05;
-    font-size: 18px;
-    border-bottom: 5px solid var(--btn-rest-border);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-  }
-  .btn-rest:not(:disabled):active {
-    border-bottom-width: 0px;
-    transform: translateY(5px);
-    box-shadow: none;
-  }
-
-  .btn-rest.resting {
-    background-color: var(--btn-resting-bg);
-    color: var(--text-cream);
-    border-bottom-color: #63300C;
-  }
-
-  .btn-stop {
-    height: 48px;
-    background-color: var(--btn-stop-bg);
-    color: var(--text-cream);
-    font-size: 15px;
-    border-bottom: 4px solid var(--btn-stop-border);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-  }
-  .btn-stop:not(:disabled):active {
-    border-bottom-width: 0px;
-    transform: translateY(4px);
-    box-shadow: none;
-  }
-
-  .btn:disabled {
-    opacity: 0.35;
-    background-color: #A3968F !important;
-    border-bottom-color: #786C66 !important;
-    color: #4A403B !important;
-    box-shadow: none !important;
-    cursor: not-allowed;
-    transform: none !important;
-  }
-
-  /* 整合式歷史與刪除紀錄區塊 */
-  .history-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 6px;
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 4px;
-  }
-
-  .section-title {
-    font-size: 13px;
-    font-weight: 900;
-    color: var(--header-dark);
-    letter-spacing: 0.5px;
-  }
-
-  .btn-delete-batch {
-    background: var(--btn-start-bg);
-    color: white;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 800;
-    font-family: var(--font-ui);
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .records-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .record-card {
-    width: 100%;
-    height: 52px;
-    background: #FAF6EF;
-    padding: 0 12px;
-    border-radius: 16px;
-    border-left: 5px solid var(--btn-rest-bg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-    border-top: 1px solid #EBE2D3;
-    border-right: 1px solid #EBE2D3;
-    border-bottom: 1px solid #EBE2D3;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .record-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
-    flex: 1;
-  }
-
-  .del-chk {
-    accent-color: var(--btn-start-bg);
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    cursor: pointer;
-  }
-
-  .record-info {
-    overflow: hidden;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .record-title {
-    font-weight: 900;
-    font-size: 13px;
-    color: #2B1810;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .record-sub {
-    font-size: 10px;
-    font-weight: 700;
-    color: #8C7B75;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .record-time-group {
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .empty-tip {
-    text-align: center;
-    font-size: 12px;
-    color: #8C7B75;
-    padding: 16px;
-    font-weight: 700;
-    width: 100%;
-    background: rgba(255,255,255,0.4);
-    border-radius: 12px;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT 音訊播放器</title>
+    <!-- Web App 相關設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="YT 播放器">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        h2 { margin-top: 0; font-size: 1.2rem; color: #bbb; }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background-color: #ff0000;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:active { background-color: #cc0000; }
+        audio { width: 100%; margin-top: 20px; display: none; }
+        .status { margin-top: 15px; font-size: 0.9rem; color: #888; }
+    </style>
 </head>
 <body>
 
-<div class="app-container">
-  <!-- Header -->
-  <div class="header-nav">
-    <div class="brand-title">CAMINO TIMER</div>
-  </div>
-
-  <!-- 像素視差動畫背景 -->
-  <div class="pixel-stage" id="pixelStage">
-    <div class="parallax-layer layer-far">
-      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
-        <path d="M0,48 L35,22 L75,42 L130,12 L190,48 L240,18 L300,45 L360,15 L390,48 L425,22 L465,42 L520,12 L580,48 L630,18 L690,45 L750,15 L780,48 L780,75 L0,75 Z" fill="#CBBBAA"/>
-      </svg>
-    </div>
-    <div class="parallax-layer layer-near">
-      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
-        <path d="M0,52 L45,32 L95,50 L155,28 L215,52 L275,30 L335,52 L390,52 L435,32 L485,50 L545,28 L605,52 L665,30 L725,52 L780,52 L780,75 L0,75 Z" fill="#A89685"/>
-      </svg>
-    </div>
-    <div class="parallax-layer layer-main">
-      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
-        <defs>
-          <g id="camino-milestone">
-            <rect x="0" y="4" width="10" height="15" rx="1.5" fill="#8C7D6B"/>
-            <rect x="1" y="2" width="8" height="2" fill="#B0A290"/>
-            <rect x="1.5" y="5.5" width="7" height="12" fill="#211510"/>
-            <path d="M5,8 L2,15 M5,8 L3.5,15 M5,8 L5,15 M5,8 L6.5,15 M5,8 L8,15" stroke="#E5A93C" stroke-width="0.8" stroke-linecap="round"/>
-            <path d="M2,6.5 L8,6.5 L5,4 Z" fill="#E5A93C"/>
-          </g>
-
-          <g id="church-style-a">
-            <rect x="0" y="22" width="30" height="28" fill="#6E5147"/>
-            <rect x="10" y="10" width="10" height="40" fill="#593F36"/>
-            <path d="M10,10 L15,2 L20,10 Z" fill="#8B2014"/>
-            <path d="M11,50 A4,4 0 0 1 19,50 Z" fill="#23120B"/>
-            <rect x="14" y="-3" width="2" height="5" fill="#E5A93C"/>
-            <rect x="12" y="-1" width="6" height="2" fill="#E5A93C"/>
-          </g>
-
-          <g id="church-style-b">
-            <rect x="4" y="24" width="28" height="26" fill="#7A5E53"/>
-            <rect x="0" y="14" width="8" height="36" fill="#664D43"/>
-            <rect x="28" y="14" width="8" height="36" fill="#664D43"/>
-            <path d="M0,14 L4,6 L8,14 Z" fill="#72291E"/>
-            <path d="M28,14 L32,6 L36,14 Z" fill="#72291E"/>
-            <path d="M14,50 A4,4 0 0 1 22,50 Z" fill="#23120B"/>
-          </g>
-        </defs>
-
-        <use href="#camino-milestone" x="45" y="43"/>
-        <use href="#church-style-a" x="120" y="12"/>
-        <circle cx="205" cy="42" r="12" fill="#2D5A27"/><rect x="203" y="52" width="4" height="10" fill="#3D251A"/>
-        <use href="#camino-milestone" x="275" y="43"/>
-        <use href="#church-style-b" x="330" y="12"/>
-        <circle cx="410" cy="42" r="11" fill="#386B31"/><rect x="408" y="51" width="4" height="10" fill="#3D251A"/>
-
-        <use href="#camino-milestone" x="435" y="43"/>
-        <use href="#church-style-a" x="510" y="12"/>
-        <circle cx="595" cy="42" r="12" fill="#2D5A27"/><rect x="593" y="52" width="4" height="10" fill="#3D251A"/>
-        <use href="#camino-milestone" x="665" y="43"/>
-        <use href="#church-style-b" x="720" y="12"/>
-
-        <rect x="0" y="62" width="780" height="13" fill="#2B1810"/>
-      </svg>
-    </div>
-
-    <svg id="walkerSvg" class="pixel-walker" viewBox="0 0 32 38">
-      <g id="walkerGroup"></g>
-    </svg>
-  </div>
-
-  <!-- 起點與終點 自選收合清單 -->
-  <div class="route-picker-container">
-    <div class="picker-card" id="startPickerCard">
-      <div class="picker-header" onclick="togglePicker('start')">
-        <span class="picker-label">START / 起點</span>
-        <div class="picker-value-group">
-          <span class="picker-value" id="startValue">請選擇起點</span>
-          <span class="picker-arrow">▼</span>
-        </div>
-      </div>
-      <div class="picker-dropdown" id="startDropdown"></div>
-    </div>
-
-    <div class="picker-card" id="endPickerCard">
-      <div class="picker-header" onclick="togglePicker('end')">
-        <span class="picker-label">END / 終點</span>
-        <div class="picker-value-group">
-          <span class="picker-value" id="endValue">請選擇終點</span>
-          <span class="picker-arrow">▼</span>
-        </div>
-      </div>
-      <div class="picker-dropdown" id="endDropdown"></div>
-    </div>
-  </div>
-
-  <!-- 計時鐘 -->
-  <div class="clock-container">
-    <div class="flip-clock">
-      <div class="flip-unit-group">
-        <div class="flip-pair">
-          <div class="flip-card" id="h1"><div class="top">0</div><div class="bottom">0</div></div>
-          <div class="flip-card" id="h2"><div class="top">0</div><div class="bottom">0</div></div>
-        </div>
-        <span class="unit-label">HOURS</span>
-      </div>
-      <div class="clock-colon">:</div>
-      <div class="flip-unit-group">
-        <div class="flip-pair">
-          <div class="flip-card" id="m1"><div class="top">0</div><div class="bottom">0</div></div>
-          <div class="flip-card" id="m2"><div class="top">0</div><div class="bottom">0</div></div>
-        </div>
-        <span class="unit-label">MINS</span>
-      </div>
-      <div class="clock-colon">:</div>
-      <div class="flip-unit-group">
-        <div class="flip-pair">
-          <div class="flip-card" id="s1"><div class="top">0</div><div class="bottom">0</div></div>
-          <div class="flip-card" id="s2"><div class="top">0</div><div class="bottom">0</div></div>
-        </div>
-        <span class="unit-label">SECS</span>
-      </div>
-    </div>
-
-    <div class="rest-bar">
-      <span class="rest-bar-title">累積休息時間</span>
-      <span class="rest-bar-time" id="restClock">00:00:00</span>
-    </div>
-  </div>
-
-  <!-- 控制按鈕區 -->
-  <div class="controls-stack">
-    <button id="btnStart" class="btn btn-start" onclick="startTimer()">開始計時</button>
-    <button id="btnRest" class="btn btn-rest" onclick="toggleRest()" disabled>PAUSE / REST</button>
-    <button id="btnStop" class="btn btn-stop" onclick="stopTimer()" disabled>完成紀錄</button>
-  </div>
-
-  <!-- 行走紀錄與刪除 -->
-  <div class="history-section">
-    <div class="section-header">
-      <span class="section-title">行走紀錄</span>
-      <button id="btnDeleteBatch" class="btn-delete-batch" onclick="deleteSelected()">
-        刪除選取項目
-      </button>
-    </div>
-    <div id="recordsList" class="records-list"></div>
-  </div>
+<div class="container">
+    <h2>YouTube 音訊播放器</h2>
+    <input type="text" id="ytUrl" placeholder="請貼上 YouTube 網址">
+    <button id="playBtn" onclick="handlePlay()">載入並播放</button>
+    <div id="status" class="status"></div>
+    
+    <!-- HTML5 音訊元件，會搭配 MediaSession API 支援鎖定螢幕控制 -->
+    <audio id="audioPlayer" controls></audio>
 </div>
 
 <script>
-  const stations = [
-    "Oviedo", "Grado", "Salas", "Tineo", "Borres",
-    "La Mesa", "Grandas de Salime", "A Fonsagrada",
-    "O Cadavo Baleira", "Lugo", "Ferreira", "Melide",
-    "O Pedrouzo", "Santiago"
-  ];
+    const audio = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const status = document.getElementById('status');
 
-  // 清除舊無效格式紀錄並載入合法紀錄
-  let records = [];
-  try {
-    const raw = JSON.parse(localStorage.getItem('camino_records') || '[]');
-    records = Array.isArray(raw) ? raw.filter(r => r && r.route && r.startDate && typeof r.duration === 'number') : [];
-  } catch (e) {
-    records = [];
-  }
-
-  let selectedStart = "", selectedEnd = "";
-  let isTiming = false, isResting = false;
-  let startTime = null, totalPauseTime = 0, restStartTime = null;
-  let timerInterval = null, prevStr = "000000";
-  let spriteFrame = 0, spriteInterval = null;
-
-  // --- 方案 1：媒體卡片背景播放元件設定 ---
-  const silentAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
-  silentAudio.loop = true;
-
-  function updateMediaSession(resting) {
-    if ('mediaSession' in navigator) {
-      const routeName = `${selectedStart || '未定起點'} ➔ ${selectedEnd || '未定終點'}`;
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: routeName,
-        artist: resting ? "⏸️ 休息中" : "🏃 Camino 計時中...",
-        album: "Camino Timer",
-        artwork: [
-          { src: 'https://a0930030260.github.io/BUENCAM1N0/favicon.ico', sizes: '96x96', type: 'image/png' }
-        ]
-      });
-
-      navigator.mediaSession.setActionHandler('play', () => {
-        if (isTiming && isResting) toggleRest();
-      });
-      navigator.mediaSession.setActionHandler('pause', () => {
-        if (isTiming && !isResting) toggleRest();
-      });
+    function extractVideoID(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
     }
-  }
 
-  const walkerGroup = document.getElementById('walkerGroup');
+    async function handlePlay() {
+        const url = document.getElementById('ytUrl').value.trim();
+        const videoId = extractVideoID(url);
 
-  function drawWalker(state, frame) {
-    const skinColor = "#E0B392";
-    const hairColor = "#2B1810";
+        if (!videoId) {
+            alert('請輸入有效的 YouTube 網址！');
+            return;
+        }
 
-    if (state === 'REST') {
-      walkerGroup.innerHTML = `
-        <rect x="4" y="18" width="9" height="13" fill="#3D251A" rx="1"/>
-        <circle cx="15" cy="15" r="5" fill="${skinColor}"/>
-        <path d="M10,14 C10,9 20,9 20,14 C19,10 11,10 10,14 Z" fill="${hairColor}"/>
-        <rect x="11" y="20" width="11" height="8" fill="#8B2014"/>
-        <rect x="13" y="28" width="10" height="5" fill="#150A05"/>
-      `;
-    } else {
-      const legOffset = (frame % 2 === 0) ? 3 : -3;
-      walkerGroup.innerHTML = `
-        <rect x="${20 + legOffset}" y="11" width="2" height="23" fill="#3D251A"/>
-        <rect x="3" y="11" width="8" height="15" fill="#3D251A" rx="1"/>
-        <circle cx="14" cy="9" r="4.5" fill="${skinColor}"/>
-        <path d="M9.5,8.5 C9.5,4 18.5,4 18.5,8.5 C17.5,5 10.5,5 9.5,8.5 Z" fill="${hairColor}"/>
-        <rect x="10" y="13" width="8" height="12" fill="#8B2014"/>
-        <rect x="14" y="15" width="5" height="3" fill="${skinColor}"/>
-        <rect x="${10 + legOffset}" y="25" width="3.5" height="10" fill="#150A05"/>
-        <rect x="${15 - legOffset}" y="25" width="3.5" height="10" fill="#23120B"/>
-      `;
+        status.innerText = '正在解析音訊...';
+        
+        // 使用公開的第三方串流 API 轉接 YouTube 音訊
+        const audioSrc = `https://api.cobalt.tools/api/json`; // 範例串流 API 概念
+        
+        // 註：由於外部 API 穩定度不一，此處以開放音訊源示範音訊播放與 MediaSession 功能
+        // 實際使用時可透過 API 獲取直接音訊檔 URL：
+        const streamUrl = `https://pipe-api.kavin.rocks/yt/stream/${videoId}`;
+
+        try {
+            audio.src = streamUrl;
+            await audio.play();
+            status.innerText = '正在播放...';
+            playBtn.innerText = '暫停 / 播放';
+
+            // 設定背景與鎖定螢幕控制項 (Media Session API)
+            setupMediaSession(videoId);
+        } catch (err) {
+            console.error(err);
+            status.innerText = '播放失敗，請檢查網址或稍後再試。';
+        }
     }
-  }
 
-  function init() {
-    renderPickers();
-    renderRecords();
-    drawWalker('REST', 0);
-  }
+    function setupMediaSession(title) {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: 'YouTube 音訊播放中',
+                artist: 'YT Audio Player',
+                album: 'Web App',
+                artwork: [
+                    { src: 'https://via.placeholder.com/512', sizes: '512x512', type: 'image/png' }
+                ]
+            });
 
-  function togglePicker(type) {
-    if (isTiming) return;
-    const startCard = document.getElementById('startPickerCard');
-    const endCard = document.getElementById('endPickerCard');
-
-    if (type === 'start') {
-      endCard.classList.remove('open');
-      startCard.classList.toggle('open');
-    } else {
-      startCard.classList.remove('open');
-      endCard.classList.toggle('open');
+            // 綁定鎖定螢幕按鈕事件
+            navigator.mediaSession.setActionHandler('play', () => {
+                audio.play();
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                audio.pause();
+            });
+            navigator.mediaSession.setActionHandler('seekto', (details) => {
+                if (details.fastSeek && ('fastSeek' in audio)) {
+                    audio.fastSeek(details.seekTime);
+                    return;
+                }
+                audio.currentTime = details.seekTime;
+            });
+        }
     }
-  }
 
-  function renderPickers() {
-    const startDropdown = document.getElementById('startDropdown');
-    const endDropdown = document.getElementById('endDropdown');
-
-    startDropdown.innerHTML = '';
-    endDropdown.innerHTML = '';
-
-    if (!selectedStart && stations.length > 0) selectedStart = stations[0];
-    if (!selectedEnd && stations.length > 1) selectedEnd = stations[1];
-
-    updatePickerUI();
-
-    stations.forEach((st) => {
-      const startItem = document.createElement('div');
-      startItem.className = `option-item ${st === selectedStart ? 'selected' : ''}`;
-      startItem.innerText = st;
-      startItem.onclick = (e) => {
-        e.stopPropagation();
-        selectedStart = st;
-        document.getElementById('startPickerCard').classList.remove('open');
-        updatePickerUI();
-        renderPickers();
-      };
-      startDropdown.appendChild(startItem);
-
-      const endItem = document.createElement('div');
-      endItem.className = `option-item ${st === selectedEnd ? 'selected' : ''}`;
-      endItem.innerText = st;
-      endItem.onclick = (e) => {
-        e.stopPropagation();
-        selectedEnd = st;
-        document.getElementById('endPickerCard').classList.remove('open');
-        updatePickerUI();
-        renderPickers();
-      };
-      endDropdown.appendChild(endItem);
+    // 按鈕切換播放/暫停
+    playBtn.addEventListener('click', () => {
+        if (audio.src && !audio.paused) {
+            audio.pause();
+            status.innerText = '已暫停';
+        } else if (audio.src && audio.paused) {
+            audio.play();
+            status.innerText = '正在播放...';
+        }
     });
-  }
-
-  function updatePickerUI() {
-    document.getElementById('startValue').innerText = selectedStart || "請選擇起點";
-    document.getElementById('endValue').innerText = selectedEnd || "請選擇終點";
-
-    const startCard = document.getElementById('startPickerCard');
-    const endCard = document.getElementById('endPickerCard');
-
-    if (selectedStart) startCard.classList.add('has-value'); else startCard.classList.remove('has-value');
-    if (selectedEnd) endCard.classList.add('has-value'); else endCard.classList.remove('has-value');
-  }
-
-  function updateFlip(id, newDigit) {
-    const card = document.getElementById(id);
-    const top = card.querySelector('.top');
-    const bottom = card.querySelector('.bottom');
-    if (top.innerText === newDigit) return;
-
-    card.querySelectorAll('.active-top, .active-bottom').forEach(e => e.remove());
-
-    const activeTop = document.createElement('div');
-    activeTop.className = 'active-top';
-    activeTop.innerText = top.innerText;
-
-    const activeBottom = document.createElement('div');
-    activeBottom.className = 'active-bottom';
-    activeBottom.innerText = newDigit;
-
-    card.appendChild(activeTop);
-    card.appendChild(activeBottom);
-
-    top.innerText = newDigit;
-    setTimeout(() => { bottom.innerText = newDigit; }, 250);
-  }
-
-  function resetClockDisplay() {
-    const ids = ['h1', 'h2', 'm1', 'm2', 's1', 's2'];
-    ids.forEach(id => {
-      const card = document.getElementById(id);
-      card.querySelector('.top').innerText = '0';
-      card.querySelector('.bottom').innerText = '0';
-      card.querySelectorAll('.active-top, .active-bottom').forEach(e => e.remove());
-    });
-    prevStr = "000000";
-    document.getElementById('restClock').innerText = "00:00:00";
-  }
-
-  function startTimer() {
-    if (!selectedStart || !selectedEnd) return;
-    isTiming = true; isResting = false;
-    startTime = new Date(); totalPauseTime = 0;
-
-    // 啟動背景播放與 iOS 卡片
-    silentAudio.play().then(() => {
-      updateMediaSession(false);
-    }).catch(err => console.log("無聲音訊啟動失敗:", err));
-
-    document.getElementById('startPickerCard').classList.remove('open');
-    document.getElementById('endPickerCard').classList.remove('open');
-
-    document.getElementById('btnStart').disabled = true;
-    document.getElementById('btnStop').disabled = false;
-    document.getElementById('btnRest').disabled = false;
-
-    document.getElementById('pixelStage').classList.add('anim-running');
-    spriteInterval = setInterval(() => { spriteFrame++; drawWalker('WALK', spriteFrame); }, 250);
-    timerInterval = setInterval(tick, 1000);
-  }
-
-  function tick() {
-    const now = new Date();
-    const diff = now - startTime;
-    let currentRest = totalPauseTime + (isResting ? (now - restStartTime) : 0);
-
-    const sec = Math.floor(diff / 1000) % 60;
-    const min = Math.floor(diff / (1000 * 60)) % 60;
-    const hrs = Math.floor(diff / (1000 * 60 * 60));
-
-    const str = String(hrs).padStart(2,'0') + String(min).padStart(2,'0') + String(sec).padStart(2,'0');
-    if (str[0] !== prevStr[0]) updateFlip('h1', str[0]);
-    if (str[1] !== prevStr[1]) updateFlip('h2', str[1]);
-    if (str[2] !== prevStr[2]) updateFlip('m1', str[2]);
-    if (str[3] !== prevStr[3]) updateFlip('m2', str[3]);
-    if (str[4] !== prevStr[4]) updateFlip('s1', str[4]);
-    if (str[5] !== prevStr[5]) updateFlip('s2', str[5]);
-    prevStr = str;
-
-    document.getElementById('restClock').innerText = fmtMS(currentRest);
-  }
-
-  function toggleRest() {
-    const stage = document.getElementById('pixelStage');
-    const btnRest = document.getElementById('btnRest');
-
-    if (!isResting) {
-      isResting = true;
-      restStartTime = new Date();
-      stage.classList.remove('anim-running');
-      clearInterval(spriteInterval);
-      drawWalker('REST', 0);
-      btnRest.classList.add('resting');
-      btnRest.innerText = 'RESUME (繼續)';
-      
-      updateMediaSession(true);
-    } else {
-      isResting = false;
-      totalPauseTime += (new Date() - restStartTime);
-      stage.classList.add('anim-running');
-      spriteInterval = setInterval(() => { spriteFrame++; drawWalker('WALK', spriteFrame); }, 250);
-      btnRest.classList.remove('resting');
-      btnRest.innerText = 'PAUSE / REST';
-      
-      updateMediaSession(false);
-    }
-  }
-
-  function stopTimer() {
-    const endTime = new Date();
-    if (isResting) totalPauseTime += (endTime - restStartTime);
-
-    // 停止背景音訊並移除媒體卡片
-    silentAudio.pause();
-    silentAudio.currentTime = 0;
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = null;
-    }
-
-    clearInterval(timerInterval);
-    clearInterval(spriteInterval);
-    document.getElementById('pixelStage').classList.remove('anim-running');
-    drawWalker('REST', 0);
-
-    const routeName = `${selectedStart} ➔ ${selectedEnd}`;
-
-    records.unshift({
-      id: Date.now(),
-      route: routeName,
-      startDate: `${endTime.getFullYear()}.${String(endTime.getMonth()+1).padStart(2,'0')}.${String(endTime.getDate()).padStart(2,'0')}`,
-      endTime: `${String(endTime.getHours()).padStart(2,'0')}:${String(endTime.getMinutes()).padStart(2,'0')}`,
-      duration: endTime - startTime,
-      rest: totalPauseTime
-    });
-
-    localStorage.setItem('camino_records', JSON.stringify(records));
-    isTiming = false; isResting = false;
-
-    document.getElementById('btnStart').disabled = false;
-    document.getElementById('btnStop').disabled = true;
-    document.getElementById('btnRest').disabled = true;
-    document.getElementById('btnRest').classList.remove('resting');
-    document.getElementById('btnRest').innerText = 'PAUSE / REST';
-
-    resetClockDisplay();
-    renderRecords();
-  }
-
-  function fmtMS(ms) {
-    if (typeof ms !== 'number' || isNaN(ms)) return "00:00:00";
-    const s = Math.floor(ms / 1000) % 60;
-    const m = Math.floor(ms / (1000 * 60)) % 60;
-    const h = Math.floor(ms / (1000 * 60 * 60));
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  }
-
-  function renderRecords() {
-    const list = document.getElementById('recordsList');
-    if (!records || records.length === 0) {
-      list.innerHTML = '<div class="empty-tip">尚無行走紀錄</div>';
-      updateBatchDeleteBtn();
-      return;
-    }
-    list.innerHTML = '';
-
-    records.forEach((r, idx) => {
-      const card = document.createElement('div');
-      card.className = 'record-card';
-      card.dataset.idx = idx;
-      card.innerHTML = `
-        <div class="record-left">
-          <input type="checkbox" class="del-chk" value="${r.id}" onchange="updateBatchDeleteBtn()">
-          <div class="record-info">
-            <div class="record-title">${r.route}</div>
-            <div class="record-sub">${r.startDate} | 結束於 ${r.endTime}</div>
-          </div>
-        </div>
-        <div class="record-time-group">
-          <div style="color:var(--btn-start-bg); font-weight:900; font-size:12px;">${fmtMS(r.duration)}</div>
-          <div class="record-sub">休息 ${fmtMS(r.rest)}</div>
-        </div>
-      `;
-      enableDrag(card);
-      list.appendChild(card);
-    });
-
-    updateBatchDeleteBtn();
-  }
-
-  function updateBatchDeleteBtn() {
-    const checkedCount = document.querySelectorAll('.del-chk:checked').length;
-    const btn = document.getElementById('btnDeleteBatch');
-    if (checkedCount > 0) {
-      btn.style.display = 'flex';
-      btn.innerText = `刪除選取項目 (${checkedCount})`;
-    } else {
-      btn.style.display = 'none';
-    }
-  }
-
-  function deleteSelected() {
-    const chks = document.querySelectorAll('.del-chk:checked');
-    const ids = Array.from(chks).map(c => Number(c.value));
-    records = records.filter(r => !ids.includes(r.id));
-    localStorage.setItem('camino_records', JSON.stringify(records));
-    renderRecords();
-  }
-
-  function enableDrag(el) {
-    let startY = 0;
-    el.addEventListener('touchstart', (e) => {
-      if (e.target.classList.contains('del-chk')) return;
-      startY = e.touches[0].clientY;
-      el.classList.add('dragging');
-    }, {passive: true});
-
-    el.addEventListener('touchend', (e) => {
-      if (e.target.classList.contains('del-chk')) return;
-      el.classList.remove('dragging');
-      const endY = e.changedTouches[0].clientY;
-      const diff = Math.round((endY - startY) / 52);
-      const fromIdx = +el.dataset.idx;
-      const toIdx = Math.max(0, Math.min(records.length - 1, fromIdx + diff));
-      if (fromIdx !== toIdx) {
-        const item = records.splice(fromIdx, 1)[0];
-        records.splice(toIdx, 0, item);
-        localStorage.setItem('camino_records', JSON.stringify(records));
-        renderRecords();
-      }
-    });
-  }
-
-  window.onload = init;
 </script>
+
 </body>
 </html>
