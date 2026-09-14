@@ -74,23 +74,15 @@
 <div id="yt-player"></div>
 
 <script>
-    let player = null;
-    let isReady = false;
+    const audio = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const status = document.getElementById('status');
 
-    // API 初始化完成的回呼函式
-    function onYouTubeIframeAPIReady() {
-        player = new YT.Player('yt-player', {
-            height: '0',
-            width: '0',
-            events: {
-                'onReady': () => { isReady = true; },
-                'onStateChange': onPlayerStateChange,
-                'onError': () => {
-                    document.getElementById('status').innerText = '播放失敗，該影片可能禁止嵌入。';
-                }
-            }
-        });
-    }
+    const instances = [
+        'https://inv.iosbb.org',
+        'https://invidious.nerdvpn.de',
+        'https://vid.puffyan.us'
+    ];
 
     function extractVideoID(url) {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -98,81 +90,92 @@
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    function handlePlay() {
+    async function handlePlay() {
         const url = document.getElementById('ytUrl').value.trim();
         const videoId = extractVideoID(url);
-        const status = document.getElementById('status');
 
         if (!videoId) {
             alert('請輸入有效的 YouTube 網址！');
             return;
         }
 
-        if (!isReady) {
-            status.innerText = '播放器載入中，請稍後...';
+        if (audio.src && !audio.paused) {
+            audio.pause();
+            status.innerText = '已暫停';
+            playBtn.innerText = '播放';
+            return;
+        } else if (audio.src && audio.paused && audio.getAttribute('data-id') === videoId) {
+            audio.play();
+            status.innerText = '正在播放...';
+            playBtn.innerText = '暫停';
             return;
         }
 
-        // 若目前正在播放相同的影片，則切換 播放/暫停
-        if (player.getVideoData() && player.getVideoData().video_id === videoId) {
-            const state = player.getPlayerState();
-            if (state === YT.PlayerState.PLAYING) {
-                player.pauseVideo();
-            } else {
-                player.playVideo();
+        status.innerText = '正在解析音訊...';
+        playBtn.innerText = '載入中...';
+
+        let success = false;
+
+        for (const instance of instances) {
+            try {
+                const res = await fetch(`${instance}/api/v1/videos/${videoId}`);
+                if (!res.ok) continue;
+                const data = await res.json();
+
+                const audioFormat = data.adaptiveFormats.find(f => f.type && f.type.includes('audio/webm')) || 
+                                    data.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
+
+                if (audioFormat && audioFormat.url) {
+                    audio.src = audioFormat.url;
+                    audio.setAttribute('data-id', videoId);
+                    
+                    // 關鍵修正：確保播放請求由使用者點擊行為直接觸發
+                    await audio.play();
+
+                    status.innerText = `正在播放：${data.title}`;
+                    playBtn.innerText = '暫停';
+                    
+                    setupMediaSession(data.title, data.author, data.videoThumbnails);
+                    success = true;
+                    break;
+                }
+            } catch (err) {
+                console.warn(`節點 ${instance} 失敗，嘗試下一個...`);
             }
-        } else {
-            // 載入新影片並播放
-            status.innerText = '正在載入...';
-            player.loadVideoById(videoId);
+        }
+
+        if (!success) {
+            status.innerText = '解析失敗，請確認網址或稍後再試。';
+            playBtn.innerText = '解析並播放';
         }
     }
 
-    function onPlayerStateChange(event) {
-        const status = document.getElementById('status');
-        const btn = document.getElementById('playBtn');
+    function setupMediaSession(title, artist, thumbnails) {
+        if ('mediaSession' in navigator) {
+            let coverUrl = 'https://via.placeholder.com/512';
+            if (thumbnails && thumbnails.length > 0) {
+                coverUrl = thumbnails[0].url;
+            }
 
-        if (event.data === YT.PlayerState.PLAYING) {
-            status.innerText = '正在播放中...';
-            btn.innerText = '暫停';
-            setupMediaSession();
-        } else if (event.data === YT.PlayerState.PAUSED) {
-            status.innerText = '已暫停';
-            btn.innerText = '播放';
-        } else if (event.data === YT.PlayerState.ENDED) {
-            status.innerText = '播放結束';
-            btn.innerText = '播放';
-        }
-    }
-
-    // 綁定手機鎖定螢幕與背景控制項 (Media Session API)
-    function setupMediaSession() {
-        if ('mediaSession' in navigator && player) {
-            const videoData = player.getVideoData();
-            
             navigator.mediaSession.metadata = new MediaMetadata({
-                title: videoData.title || 'YouTube 音訊',
-                artist: videoData.author || 'YouTube',
-                artwork: [
-                    { 
-                        src: `https://img.youtube.com/vi/${videoData.video_id}/hqdefault.jpg`, 
-                        sizes: '480x360', 
-                        type: 'image/jpeg' 
-                    }
-                ]
+                title: title,
+                artist: artist || 'YouTube',
+                artwork: [{ src: coverUrl, sizes: '512x512', type: 'image/jpeg' }]
             });
 
-            // 實作鎖定螢幕按鈕控制
-            navigator.mediaSession.setActionHandler('play', () => player.playVideo());
-            navigator.mediaSession.setActionHandler('pause', () => player.pauseVideo());
+            // 綁定背景播放事件
+            navigator.mediaSession.setActionHandler('play', () => {
+                audio.play();
+                playBtn.innerText = '暫停';
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                audio.pause();
+                playBtn.innerText = '播放';
+            });
             navigator.mediaSession.setActionHandler('seekto', (details) => {
                 if (details.seekTime) {
-                    player.seekTo(details.seekTime, true);
+                    audio.currentTime = details.seekTime;
                 }
             });
         }
     }
-</script>
-
-</body>
-</html>
