@@ -55,8 +55,8 @@
             transition: background 0.2s;
         }
         button:active { background-color: #cc0000; }
+        button:disabled { background-color: #555555; cursor: not-allowed; }
         .status { margin-top: 15px; font-size: 0.9rem; color: #888; word-break: break-all; }
-        /* 使用原生 audio 元素，但隱藏，全部透過 JS 與 MediaSession 控制 */
         audio { display: none; }
     </style>
 </head>
@@ -76,13 +76,33 @@
     const playBtn = document.getElementById('playBtn');
     const status = document.getElementById('status');
 
-    // 開放式 Invidious API 備用伺服器節點（用於提取 YouTube 音訊串流）
-    const apiInstances = [
-        'https://inv.iosbb.org',
+    // 預設常見的動態備用伺服器
+    let dynamicInstances = [
+        'https://inv.tux.pizza',
         'https://invidious.nerdvpn.de',
-        'https://vid.puffyan.us',
-        'https://invidious.privacydev.net'
+        'https://inv.privacydev.net',
+        'https://invidious.drgns.space',
+        'https://invidious.projectsegfau.lt'
     ];
+
+    // 初始化時嘗試抓取官方健康的伺服器清單
+    async function fetchFreshInstances() {
+        try {
+            const res = await fetch('https://api.invidious.io/instances.json?sort_by=health');
+            if (res.ok) {
+                const data = await res.json();
+                const healthy = data
+                    .filter(item => item[1].type === 'https' && item[1].health && item[1].health.percentage > 80)
+                    .map(item => item[1].uri);
+                if (healthy.length > 0) {
+                    dynamicInstances = healthy.concat(dynamicInstances);
+                }
+            }
+        } catch (e) {
+            console.log('無法取得動態列表，使用預設伺服器清單');
+        }
+    }
+    fetchFreshInstances();
 
     function extractVideoID(url) {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -99,7 +119,7 @@
             return;
         }
 
-        // 若同首歌曲點擊按鈕，切換 播放 / 暫停
+        // 同一首歌曲切換 播放/暫停
         if (audio.getAttribute('data-id') === videoId && audio.src) {
             if (!audio.paused) {
                 audio.pause();
@@ -109,20 +129,25 @@
             return;
         }
 
-        status.innerText = '正在擷取音訊串流...';
+        status.innerText = '正在尋找可用伺服器解析中...';
         playBtn.innerText = '載入中...';
         playBtn.disabled = true;
 
         let success = false;
 
-        // 輪詢可用 API 節點取得音訊檔直連網址
-        for (const instance of apiInstances) {
+        for (const instance of dynamicInstances) {
             try {
-                const response = await fetch(`${instance}/api/v1/videos/${videoId}`);
+                // 設定 5 秒連線逾時，避免單一伺服器卡住
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const response = await fetch(`${instance}/api/v1/videos/${videoId}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 if (!response.ok) continue;
                 const data = await response.json();
 
-                // 優先選擇格式為 m4a / webm 的純音訊檔
+                // 篩選 audio 格式
                 const audioStream = data.adaptiveFormats.find(f => f.type && f.type.includes('audio/mp4')) ||
                                     data.adaptiveFormats.find(f => f.type && f.type.includes('audio/webm')) ||
                                     data.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
@@ -131,47 +156,40 @@
                     audio.src = audioStream.url;
                     audio.setAttribute('data-id', videoId);
                     
-                    // 必須由點擊事件觸發播放，才能取得 iOS 鎖屏播放權限
                     await audio.play();
 
                     status.innerText = `正在播放：${data.title}`;
                     playBtn.innerText = '暫停';
                     playBtn.disabled = false;
                     
-                    // 設定手機控制中心與鎖定螢幕模組
                     setupMediaSession(data.title, data.author, videoId);
                     success = true;
                     break;
                 }
             } catch (err) {
-                console.warn(`節點 ${instance} 連線失敗，嘗試下一個...`);
+                console.warn(`伺服器 ${instance} 逾時或失敗，嘗試下一個...`);
             }
         }
 
         if (!success) {
-            status.innerText = '解析失敗，可能網路繁忙，請稍後重試！';
+            status.innerText = '解析失敗，所有代理伺服器皆忙碌中，請稍後重試！';
             playBtn.innerText = '解析並播放';
             playBtn.disabled = false;
         }
     }
 
-    // 更新 MediaSession (鎖定螢幕卡片、進度條、控制鍵)
     function setupMediaSession(title, artist, videoId) {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: title,
                 artist: artist || 'YouTube',
                 artwork: [
-                    { src: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, sizes: '480x360', type: 'image/jpeg' },
-                    { src: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, sizes: '1280x720', type: 'image/jpeg' }
+                    { src: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, sizes: '480x360', type: 'image/jpeg' }
                 ]
             });
 
-            // 綁定鎖定螢幕按鈕操作
             navigator.mediaSession.setActionHandler('play', () => audio.play());
             navigator.mediaSession.setActionHandler('pause', () => audio.pause());
-            
-            // 綁定鎖定螢幕進度條拖動事件
             navigator.mediaSession.setActionHandler('seekto', (details) => {
                 if (details.seekTime) {
                     audio.currentTime = details.seekTime;
@@ -181,7 +199,6 @@
         }
     }
 
-    // 定期同步進度條至鎖定螢幕
     function updatePositionState() {
         if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
             if (!isNaN(audio.duration) && !isNaN(audio.currentTime)) {
@@ -194,7 +211,6 @@
         }
     }
 
-    // 監聽 HTML5 Audio 原生狀態
     audio.addEventListener('play', () => {
         playBtn.innerText = '暫停';
         if (audio.getAttribute('data-id')) {
