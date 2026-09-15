@@ -1,6 +1,6 @@
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open('buencamino-v3').then((cache) => cache.addAll(['./', './index.html', './manifest.json']))
+    caches.open('buencamino-v4').then((cache) => cache.addAll(['./', './index.html', './manifest.json']))
   );
 });
 
