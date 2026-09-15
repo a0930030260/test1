@@ -1265,15 +1265,20 @@
 
     const routeName = `${selectedStart} ➔ ${selectedEnd}`;
 
-    records.unshift({
+
+    
+records.unshift({
       id: Date.now(),
-      route: `${routeName} (獲得 ${currentScore} 個)`,
+      route: routeName, // 只存起訖站
       startDate: `${endTime.getFullYear()}.${String(endTime.getMonth()+1).padStart(2,'0')}.${String(endTime.getDate()).padStart(2,'0')}`,
       endTime: `${String(endTime.getHours()).padStart(2,'0')}:${String(endTime.getMinutes()).padStart(2,'0')}`,
       duration: endTime - startTime,
       rest: totalPauseTime,
       shells: currentScore
     });
+
+
+    
 
     localStorage.setItem('camino_records', JSON.stringify(records));
     isTiming = false; isResting = false;
@@ -1299,7 +1304,11 @@
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
 
-  function renderRecords() {
+
+
+
+
+function renderRecords() {
     const list = document.getElementById('recordsList');
     if (!records || records.length === 0) {
       list.innerHTML = '<div class="empty-tip">尚無行走紀錄</div>';
@@ -1309,8 +1318,11 @@
     list.innerHTML = '';
 
     records.forEach((r, idx) => {
-      // 兼容舊資料格式：若無 shells 欄位則不強制顯示貝殼數
-      const shellText = (r.shells !== undefined) ? `共 "${r.shells}" 個` : '';
+      // 統一檢查貝殼數，若大於等於 0 則顯示標籤
+      const shellDisplay = (r.shells !== undefined && r.shells > 0) 
+        ? `<span style="color: var(--btn-rest-bg); font-weight: 800; font-size: 11px; margin-left: 6px;">🐚 獲得 ${r.shells} 個</span>` 
+        : '';
+
       const card = document.createElement('div');
       card.className = 'record-card';
       card.dataset.idx = idx;
@@ -1318,7 +1330,7 @@
         <div class="record-left">
           <input type="checkbox" class="del-chk" value="${r.id}" onchange="updateBatchDeleteBtn()">
           <div class="record-info">
-            <div class="record-title">${r.route} ${shellText ? `<span style="color:var(--text-gold); font-size:11px;">(${shellText})</span>` : ''}</div>
+            <div class="record-title">${r.route} ${shellDisplay}</div>
             <div class="record-sub">${r.startDate} | 結束於 ${r.endTime}</div>
           </div>
         </div>
@@ -1333,6 +1345,10 @@
 
     updateBatchDeleteBtn();
   }
+
+
+
+  
 
   function updateBatchDeleteBtn() {
     const checkedCount = document.querySelectorAll('.del-chk:checked').length;
