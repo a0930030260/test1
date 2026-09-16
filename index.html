@@ -688,7 +688,7 @@
     gap: 12px;
   }
 
-  /* 護照集郵冊樣式 (兩欄並排，維持一致大小) */
+  /* 護照集郵冊樣式 */
   .credencial-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -737,7 +737,7 @@
     width: 100%;
   }
 
-  /* 戳章詳情彈窗 (點擊後放大滿版顯示) */
+  /* 戳章詳情彈窗 */
   .stamp-detail-box {
     display: flex;
     flex-direction: column;
@@ -754,6 +754,7 @@
     align-items: center;
     background: transparent;
     flex-shrink: 0;
+    cursor: pointer;
   }
   #stampModalDesc {
     font-size: 12px;
@@ -762,6 +763,31 @@
     line-height: 1.6;
     white-space: normal;
     word-break: break-all;
+  }
+
+  /* 確認儲存彈窗自訂按鈕樣式 */
+  .confirm-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .confirm-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+  }
+  .confirm-yes {
+    background: var(--btn-start-bg);
+    color: var(--text-cream);
+  }
+  .confirm-no {
+    background: var(--btn-stop-bg);
+    color: var(--text-cream);
   }
 </style>
 </head>
@@ -925,7 +951,7 @@
     </div>
     <div class="modal-body">
       <div style="font-size: 11px; color: #6E5D54; text-align: center; font-weight: 800; margin-bottom: 4px;">
-        點擊已解鎖的站點郵戳可檢視詳細典故（長按圖案可儲存去背郵戳）
+        點擊檢視詳情 | 雙擊郵戳可直接儲存去背圖案
       </div>
       <div class="credencial-grid" id="credencialGrid">
         <!-- 動態生成站點郵戳 -->
@@ -942,15 +968,34 @@
       <button class="modal-close" onclick="closeModal('stampDetailModal')">✕</button>
     </div>
     <div class="modal-body stamp-detail-box">
-      <div class="stamp-large-circle" id="stampLargeSvgContainer"></div>
-      <div style="font-size: 10px; color: #8C7B75; font-weight: 700;">💡 長按上方郵戳圖片可儲存去背圖案至相簿</div>
+      <div class="stamp-large-circle" id="stampLargeSvgContainer" title="雙擊此處可儲存去背郵戳"></div>
       <div id="stampModalDesc"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ❓ 是否儲存去背郵戳確認視窗 -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>💾 儲存郵戳通知</span>
+      <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align: center; padding: 24px 16px;">
+      <div style="font-size: 13px; font-weight: 800; color: #2B1810; line-height: 1.5;" id="confirmText">
+        是否將此去背郵戳圖案儲存至相簿？
+      </div>
+      <div class="confirm-btns">
+        <button class="confirm-btn confirm-yes" onclick="executeSaveStamp()">是 (Yes)</button>
+        <button class="confirm-btn confirm-no" onclick="closeModal('confirmModal')">否 (No)</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
   let audioCtx = null;
+  let currentStampKeyToSave = null;
 
   function initAudio() {
     if (!audioCtx) {
@@ -1289,91 +1334,46 @@
     document.getElementById(id).classList.remove('open');
   }
 
-  // 📥 核心功能：將 SVG 轉為去背透明 PNG 並儲存至相簿
-  function saveStampToAlbum(svgString, stampName) {
-    playSoundAction();
-    const cleanName = stampName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
-    const filename = `Camino_Stamp_${cleanName}.png`;
+  function promptSaveStamp(stKey) {
+    currentStampKeyToSave = stKey;
+    const stampObj = stationStamps[stKey];
+    if (stampObj) {
+      document.getElementById('confirmText').innerText = `是否將「${stampObj.name}」去背郵戳圖案儲存至相簿？`;
+      openModal('confirmModal');
+    }
+  }
 
+  function executeSaveStamp() {
+    closeModal('confirmModal');
+    if (!currentStampKeyToSave) return;
+    const stKey = currentStampKeyToSave;
+    const stampObj = stationStamps[stKey];
+    if (!stampObj) return;
+
+    // 動態透過 Canvas 產生透明背景 (去背) PNG 圖片
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const URL = window.URL || window.webkitURL || window;
-    const blobURL = URL.createObjectURL(blob);
     const img = new Image();
+    const svgBlob = new Blob([stampObj.svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
 
-    img.onload = () => {
+    img.onload = function() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(blobURL);
+      URL.revokeObjectURL(url);
 
-      canvas.toBlob(async (pngBlob) => {
-        if (!pngBlob) return;
-        const file = new File([pngBlob], filename, { type: 'image/png' });
-
-        // 優先嘗試行動端原生 Share API (可直接存入手機相簿/照片)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: '朝聖之路郵戳',
-              text: `分享 ${stampName} 去背郵戳`
-            });
-            return;
-          } catch (err) {
-            if (err.name === 'AbortError') return; // 使用者取消分享
-          }
-        }
-
-        // 備用方案：自動觸發下載
-        const downloadUrl = URL.createObjectURL(pngBlob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
-      }, 'image/png');
+      const pngUrl = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `Camino_Stamp_${stKey}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
     };
-
-    img.src = blobURL;
-  }
-
-  // 綁定長按事件處理常式
-  function setupLongPress(element, svgString, stampName) {
-    let pressTimer = null;
-    let isLongPress = false;
-
-    const startPress = (e) => {
-      isLongPress = false;
-      if (pressTimer) clearTimeout(pressTimer);
-      pressTimer = setTimeout(() => {
-        isLongPress = true;
-        saveStampToAlbum(svgString, stampName);
-      }, 600); // 600毫秒視為長按
-    };
-
-    const cancelPress = () => {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    };
-
-    element.addEventListener('touchstart', startPress, {passive: true});
-    element.addEventListener('touchend', cancelPress);
-    element.addEventListener('touchmove', cancelPress);
-    
-    element.addEventListener('mousedown', startPress);
-    element.addEventListener('mouseup', cancelPress);
-    element.addEventListener('mouseleave', cancelPress);
-
-    // 回傳判定是否為長按的函式供點擊事件使用
-    return () => isLongPress;
+    img.src = url;
   }
 
   function renderCredencial() {
@@ -1400,21 +1400,22 @@
         <div class="sello-name">${stKey}</div>
       `;
       if (isUnlocked) {
-        const checkLongPress = setupLongPress(card, stamp.svg, stKey);
+        // 點擊開啟詳細視窗
         card.onclick = () => {
-          if (checkLongPress()) return; // 若是長按觸發則不開啟彈窗
           playSoundAction();
           document.getElementById('stampModalTitle').innerText = stamp.name;
-          
-          // 渲染大圖並在詳細彈窗中也綁定長按儲存
-          const largeContainer = document.getElementById('stampLargeSvgContainer');
-          largeContainer.innerHTML = stamp.svg;
-          if (largeContainer.firstElementChild) {
-            setupLongPress(largeContainer.firstElementChild, stamp.svg, stKey);
-          }
-
+          document.getElementById('stampLargeSvgContainer').innerHTML = stamp.svg;
+          // 綁定放大檢視畫面的雙擊事件
+          document.getElementById('stampLargeSvgContainer').ondblclick = () => {
+            promptSaveStamp(stKey);
+          };
           document.getElementById('stampModalDesc').innerText = stamp.desc;
           openModal('stampDetailModal');
+        };
+        // 雙擊郵戳卡片直接跳出儲存通知
+        card.ondblclick = (e) => {
+          e.stopPropagation();
+          promptSaveStamp(stKey);
         };
       }
       grid.appendChild(card);
