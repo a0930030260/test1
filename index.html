@@ -754,7 +754,6 @@
     align-items: center;
     background: transparent;
     flex-shrink: 0;
-    cursor: pointer;
   }
   #stampModalDesc {
     font-size: 12px;
@@ -763,31 +762,6 @@
     line-height: 1.6;
     white-space: normal;
     word-break: break-all;
-  }
-
-  /* 確認儲存彈窗自訂按鈕樣式 */
-  .confirm-btns {
-    display: flex;
-    gap: 10px;
-    margin-top: 6px;
-  }
-  .confirm-btn {
-    flex: 1;
-    padding: 10px;
-    border-radius: 12px;
-    font-weight: 900;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-ui);
-  }
-  .confirm-yes {
-    background: var(--btn-start-bg);
-    color: var(--text-cream);
-  }
-  .confirm-no {
-    background: var(--btn-stop-bg);
-    color: var(--text-cream);
   }
 </style>
 </head>
@@ -951,7 +925,7 @@
     </div>
     <div class="modal-body">
       <div style="font-size: 11px; color: #6E5D54; text-align: center; font-weight: 800; margin-bottom: 4px;">
-        點擊檢視詳情 | 雙擊郵戳可直接儲存去背圖案
+        點擊檢視站點郵戳詳情
       </div>
       <div class="credencial-grid" id="credencialGrid">
         <!-- 動態生成站點郵戳 -->
@@ -968,34 +942,14 @@
       <button class="modal-close" onclick="closeModal('stampDetailModal')">✕</button>
     </div>
     <div class="modal-body stamp-detail-box">
-      <div class="stamp-large-circle" id="stampLargeSvgContainer" title="雙擊此處可儲存去背郵戳"></div>
+      <div class="stamp-large-circle" id="stampLargeSvgContainer"></div>
       <div id="stampModalDesc"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ❓ 是否儲存去背郵戳確認視窗 -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <span>💾 儲存郵戳通知</span>
-      <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
-    </div>
-    <div class="modal-body" style="text-align: center; padding: 24px 16px;">
-      <div style="font-size: 13px; font-weight: 800; color: #2B1810; line-height: 1.5;" id="confirmText">
-        是否將此去背郵戳圖案儲存至相簿？
-      </div>
-      <div class="confirm-btns">
-        <button class="confirm-btn confirm-yes" onclick="executeSaveStamp()">是 (Yes)</button>
-        <button class="confirm-btn confirm-no" onclick="closeModal('confirmModal')">否 (No)</button>
-      </div>
     </div>
   </div>
 </div>
 
 <script>
   let audioCtx = null;
-  let currentStampKeyToSave = null;
 
   function initAudio() {
     if (!audioCtx) {
@@ -1008,26 +962,6 @@
 
   window.addEventListener('touchstart', initAudio, { once: true });
   window.addEventListener('click', initAudio, { once: true });
-
-  function updateMediaSession(durationText) {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: `起點: ${selectedStart} ➔ 終點: ${selectedEnd}`,
-        artist: 'Camino Timer 朝聖計時器',
-        album: `計時時長: ${durationText}`,
-        artwork: [
-          { src: './icon.png', sizes: '96x96', type: 'image/png' },
-          { src: './icon.png', sizes: '128x128', type: 'image/png' },
-          { src: './icon.png', sizes: '192x192', type: 'image/png' },
-          { src: './icon.png', sizes: '512x512', type: 'image/png' }
-        ]
-      });
-
-      navigator.mediaSession.setActionHandler('play', () => { if (isResting) toggleRest(); });
-      navigator.mediaSession.setActionHandler('pause', () => { if (!isResting) toggleRest(); });
-      navigator.mediaSession.setActionHandler('stop', () => { stopTimer(); });
-    }
-  }
 
   function playSoundAction() {
     initAudio();
@@ -1334,48 +1268,6 @@
     document.getElementById(id).classList.remove('open');
   }
 
-  function promptSaveStamp(stKey) {
-    currentStampKeyToSave = stKey;
-    const stampObj = stationStamps[stKey];
-    if (stampObj) {
-      document.getElementById('confirmText').innerText = `是否將「${stampObj.name}」去背郵戳圖案儲存至相簿？`;
-      openModal('confirmModal');
-    }
-  }
-
-  function executeSaveStamp() {
-    closeModal('confirmModal');
-    if (!currentStampKeyToSave) return;
-    const stKey = currentStampKeyToSave;
-    const stampObj = stationStamps[stKey];
-    if (!stampObj) return;
-
-    // 動態透過 Canvas 產生透明背景 (去背) PNG 圖片
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-
-    const img = new Image();
-    const svgBlob = new Blob([stampObj.svg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-
-    img.onload = function() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-
-      const pngUrl = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.href = pngUrl;
-      downloadLink.download = `Camino_Stamp_${stKey}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-    };
-    img.src = url;
-  }
-
   function renderCredencial() {
     const grid = document.getElementById('credencialGrid');
     grid.innerHTML = '';
@@ -1400,22 +1292,12 @@
         <div class="sello-name">${stKey}</div>
       `;
       if (isUnlocked) {
-        // 點擊開啟詳細視窗
         card.onclick = () => {
           playSoundAction();
           document.getElementById('stampModalTitle').innerText = stamp.name;
           document.getElementById('stampLargeSvgContainer').innerHTML = stamp.svg;
-          // 綁定放大檢視畫面的雙擊事件
-          document.getElementById('stampLargeSvgContainer').ondblclick = () => {
-            promptSaveStamp(stKey);
-          };
           document.getElementById('stampModalDesc').innerText = stamp.desc;
           openModal('stampDetailModal');
-        };
-        // 雙擊郵戳卡片直接跳出儲存通知
-        card.ondblclick = (e) => {
-          e.stopPropagation();
-          promptSaveStamp(stKey);
         };
       }
       grid.appendChild(card);
@@ -1648,8 +1530,6 @@
     document.getElementById('scoreBoard').innerText = `Score: 0`;
     activeShells = [];
 
-    updateMediaSession("00:00:00");
-
     document.getElementById('startPickerCard').classList.remove('open');
     document.getElementById('endPickerCard').classList.remove('open');
 
@@ -1704,9 +1584,6 @@
       lastSpawnedSecond = totalSecs;
       spawnGoldenShell();
     }
-
-    const durationFormatted = `${String(hrs).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-    updateMediaSession(durationFormatted);
 
     const str = String(hrs).padStart(2,'0') + String(min).padStart(2,'0') + String(sec).padStart(2,'0');
     if (str[0] !== prevStr[0]) updateFlip('h1', str[0]);
