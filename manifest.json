@@ -8,11 +8,16 @@
   "theme_color": "#AA151B",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%230039F0'/><path d='M256 110c-65 0-120 45-120 115 0 35 15 70 40 95l80 80 80-80c25-25 40-60 40-95 0-70-55-115-120-115z' fill='%23F1BF00'/></svg>",
+      "src": "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
- 
