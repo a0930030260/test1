@@ -1,7 +1,6 @@
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-
-
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#AA151B">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,10 +11,7 @@
     navigator.serviceWorker.register('./sw.js');
   }
 </script>
-  
 
-
-  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Camino Timer</title>
@@ -24,24 +20,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    /* 溫和厚重的大地色系 */
-    --bg-cream: #EFE7DA;         /* 厚重暖燕麥色 */
-    --header-dark: #2B1810;      /* 深沉濃黑咖啡色 */
-    --panel-dark: #23120B;       /* 更深沉的面板底色 */
-    --inner-dark: #150A05;       /* 翻頁鐘內部極深底色 */
-    
-    /* 按鈕顏色：高對比與厚重質感 */
-    --btn-start-bg: #8B2014;     /* 溫暖厚重的復古磚紅 */
+    --bg-cream: #EFE7DA;         
+    --header-dark: #2B1810;      
+    --panel-dark: #23120B;       
+    --inner-dark: #150A05;       
+    --btn-start-bg: #8B2014;     
     --btn-start-border: #5A110B;
-    
-    --btn-rest-bg: #D48439;      /* 溫和厚重的琥珀焦糖橙 */
+    --btn-rest-bg: #D48439;      
     --btn-rest-border: #96541D;
-    
-    --btn-resting-bg: #A35017;   /* 暫停中：更深濃的焦糖色 */
-    
-    --btn-stop-bg: #7C706B;      /* 厚重復古泥灰岩 */
+    --btn-resting-bg: #A35017;   
+    --btn-stop-bg: #7C706B;      
     --btn-stop-border: #524844;
-    
     --accent-yellow: #E5A93C;
     --text-gold: #DCA048;
     --text-cream: #F7F3EB;
@@ -80,16 +69,15 @@
     gap: 12px;
   }
 
-  /* 頂部 Header */
   .header-nav {
     width: 100%;
     height: 48px;
     background-color: var(--header-dark);
     border-radius: 18px;
-    padding: 0 16px;
+    padding: 0 12px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     border: 1px solid #3D251A;
     flex-shrink: 0;
@@ -97,14 +85,68 @@
 
   .brand-title {
     font-family: var(--font-title);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 900;
     color: var(--text-gold);
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     text-align: center;
+    flex: 1;
   }
 
-  /* 像素動畫區 */
+  .header-btn {
+    background: #3D251A;
+    color: var(--text-gold);
+    border: 1px solid var(--accent-yellow);
+    border-radius: 10px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: background 0.2s;
+  }
+  .header-btn:active {
+    background: var(--accent-yellow);
+    color: var(--header-dark);
+  }
+
+  .progress-panel {
+    width: 100%;
+    background: #E2D7C5;
+    border: 2px solid #C4B59D;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #5A4A42;
+  }
+
+  .progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #C4B59D;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--btn-start-bg);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
   .pixel-stage {
     position: relative;
     width: 100%;
@@ -144,21 +186,18 @@
     transition: transform 0.15s ease-out;
   }
 
-  /* 跳躍效果 Class */
   .pixel-walker.jump {
     transform: translateY(-22px);
   }
 
-  /* 遊戲金幣 (金色扇貝) 樣式 */
   .pixel-shell {
     position: absolute;
-    bottom: 34px; /* 人物頭頂以上且跳躍才可碰觸的高度 */
+    bottom: 34px;
     width: 20px;
     height: 20px;
     z-index: 9;
   }
 
-  /* 即時分數顯示看板 */
   .game-score-board {
     position: absolute;
     top: 6px;
@@ -174,7 +213,6 @@
     pointer-events: none;
   }
 
-  /* 自選收合清單區 (Accordions) */
   .route-picker-container {
     width: 100%;
     display: flex;
@@ -265,7 +303,13 @@
     color: #FFFDF8;
   }
 
-  /* 翻頁鐘主面板 */
+  .option-item.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: #EBE2D3 !important;
+    color: #8C7B75 !important;
+  }
+
   .clock-container {
     width: 100%;
     background-color: var(--panel-dark);
@@ -364,7 +408,6 @@
     margin-top: 4px;
   }
 
-  /* 累積休息時間 bar */
   .rest-bar {
     width: 100%;
     height: 36px;
@@ -381,7 +424,6 @@
   .rest-bar-title { font-size: 11px; font-weight: 800; color: #B0A097; }
   .rest-bar-time { font-size: 13px; font-weight: 800; color: var(--text-cream); }
 
-  /* 控制按鈕區 */
   .controls-stack {
     display: flex;
     flex-direction: column;
@@ -463,7 +505,6 @@
     transform: none !important;
   }
 
-  /* 整合式歷史與刪除紀錄區塊 */
   .history-section {
     width: 100%;
     display: flex;
@@ -581,19 +622,169 @@
     background: rgba(255,255,255,0.4);
     border-radius: 12px;
   }
+
+  /* 彈跳視窗共用樣式 (Modal) */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+  .modal-content {
+    background: #FAF6EF;
+    border: 3px solid #723C13;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 340px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  }
+  .modal-header {
+    background: var(--header-dark);
+    color: var(--text-gold);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-title);
+    font-size: 15px;
+    font-weight: 900;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .modal-header span:first-child {
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    flex: 1;
+    line-height: 1.3;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-cream);
+    font-size: 18px;
+    cursor: pointer;
+    font-weight: 900;
+    flex-shrink: 0;
+    padding: 4px;
+    line-height: 1;
+  }
+  .modal-body {
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* 護照集郵冊樣式 (兩欄並排，維持一致大小) */
+  .credencial-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .sello-card {
+    background: #E2D7C5;
+    border: 2px dashed #C4B59D;
+    border-radius: 14px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    opacity: 0.35;
+    transition: transform 0.2s;
+    height: 125px;
+  }
+  .sello-card.unlocked {
+    opacity: 1;
+    border-color: #8B2014;
+    background: #FAF6EF;
+  }
+  .sello-card:active {
+    transform: scale(0.95);
+  }
+  .sello-img-box {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .sello-name {
+    font-size: 11px;
+    font-weight: 900;
+    color: #2B1810;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  /* 戳章詳情彈窗 (點擊後放大滿版顯示) */
+  .stamp-detail-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    padding: 20px 16px;
+  }
+  .stamp-large-circle {
+    width: 160px;
+    height: 160px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  #stampModalDesc {
+    font-size: 12px;
+    font-weight: 800;
+    color: #2B1810;
+    line-height: 1.6;
+    white-space: normal;
+    word-break: break-all;
+  }
 </style>
 </head>
 <body>
 
 <div class="app-container">
-  <!-- Header -->
   <div class="header-nav">
+    <div style="width: 48px;"></div>
     <div class="brand-title">CAMINO TIMER</div>
+    <button class="header-btn" onclick="openModal('credencialModal')">📜 護照</button>
   </div>
 
-  <!-- 像素視差動畫背景 -->
+  <div class="progress-panel">
+    <div class="progress-info">
+      <span id="progressText">距離聖地雅哥還有 321.0 公里</span>
+      <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressBarFill"></div>
+    </div>
+  </div>
+
   <div class="pixel-stage" id="pixelStage">
-    <!-- 即時分數看板 -->
     <div class="game-score-board" id="scoreBoard">Score: 0</div>
 
     <div class="parallax-layer layer-far">
@@ -616,7 +807,6 @@
             <path d="M5,8 L2,15 M5,8 L3.5,15 M5,8 L5,15 M5,8 L6.5,15 M5,8 L8,15" stroke="#E5A93C" stroke-width="0.8" stroke-linecap="round"/>
             <path d="M2,6.5 L8,6.5 L5,4 Z" fill="#E5A93C"/>
           </g>
-
           <g id="church-style-a">
             <rect x="0" y="22" width="30" height="28" fill="#6E5147"/>
             <rect x="10" y="10" width="10" height="40" fill="#593F36"/>
@@ -625,7 +815,6 @@
             <rect x="14" y="-3" width="2" height="5" fill="#E5A93C"/>
             <rect x="12" y="-1" width="6" height="2" fill="#E5A93C"/>
           </g>
-
           <g id="church-style-b">
             <rect x="4" y="24" width="28" height="26" fill="#7A5E53"/>
             <rect x="0" y="14" width="8" height="36" fill="#664D43"/>
@@ -635,20 +824,17 @@
             <path d="M14,50 A4,4 0 0 1 22,50 Z" fill="#23120B"/>
           </g>
         </defs>
-
         <use href="#camino-milestone" x="45" y="43"/>
         <use href="#church-style-a" x="120" y="12"/>
         <circle cx="205" cy="42" r="12" fill="#2D5A27"/><rect x="203" y="52" width="4" height="10" fill="#3D251A"/>
         <use href="#camino-milestone" x="275" y="43"/>
         <use href="#church-style-b" x="330" y="12"/>
         <circle cx="410" cy="42" r="11" fill="#386B31"/><rect x="408" y="51" width="4" height="10" fill="#3D251A"/>
-
         <use href="#camino-milestone" x="435" y="43"/>
         <use href="#church-style-a" x="510" y="12"/>
         <circle cx="595" cy="42" r="12" fill="#2D5A27"/><rect x="593" y="52" width="4" height="10" fill="#3D251A"/>
         <use href="#camino-milestone" x="665" y="43"/>
         <use href="#church-style-b" x="720" y="12"/>
-
         <rect x="0" y="62" width="780" height="13" fill="#2B1810"/>
       </svg>
     </div>
@@ -658,7 +844,6 @@
     </svg>
   </div>
 
-  <!-- 起點與終點 自選收合清單 -->
   <div class="route-picker-container">
     <div class="picker-card" id="startPickerCard">
       <div class="picker-header" onclick="togglePicker('start')">
@@ -683,7 +868,6 @@
     </div>
   </div>
 
-  <!-- 計時鐘 -->
   <div class="clock-container">
     <div class="flip-clock">
       <div class="flip-unit-group">
@@ -717,27 +901,55 @@
     </div>
   </div>
 
-  <!-- 控制按鈕區 -->
   <div class="controls-stack">
     <button id="btnStart" class="btn btn-start" onclick="handleMainAction()">開始計時</button>
     <button id="btnRest" class="btn btn-rest" onclick="toggleRest()" disabled>PAUSE / REST</button>
     <button id="btnStop" class="btn btn-stop" onclick="stopTimer()" disabled>完成紀錄</button>
   </div>
 
-  <!-- 行走紀錄與刪除 -->
   <div class="history-section">
     <div class="section-header">
       <span class="section-title">行走紀錄</span>
-      <button id="btnDeleteBatch" class="btn-delete-batch" onclick="deleteSelected()">
-        刪除選取項目
-      </button>
+      <button id="btnDeleteBatch" class="btn-delete-batch" onclick="deleteSelected()">刪除選取項目</button>
     </div>
     <div id="recordsList" class="records-list"></div>
   </div>
 </div>
 
+<!-- 📜 護照集郵冊彈跳視窗 -->
+<div class="modal-overlay" id="credencialModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>📜 朝聖者護照 (Credencial)</span>
+      <button class="modal-close" onclick="closeModal('credencialModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size: 11px; color: #6E5D54; text-align: center; font-weight: 800; margin-bottom: 4px;">
+        點擊已解鎖的站點郵戳可檢視詳細典故（長按圖案可儲存去背郵戳）
+      </div>
+      <div class="credencial-grid" id="credencialGrid">
+        <!-- 動態生成站點郵戳 -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🔍 郵戳詳細介紹彈跳視窗 -->
+<div class="modal-overlay" id="stampDetailModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span id="stampModalTitle">站點郵戳</span>
+      <button class="modal-close" onclick="closeModal('stampDetailModal')">✕</button>
+    </div>
+    <div class="modal-body stamp-detail-box">
+      <div class="stamp-large-circle" id="stampLargeSvgContainer"></div>
+      <div style="font-size: 10px; color: #8C7B75; font-weight: 700;">💡 長按上方郵戳圖片可儲存去背圖案至相簿</div>
+      <div id="stampModalDesc"></div>
+    </div>
+  </div>
+</div>
+
 <script>
-  /* ================= Web Audio API 跨手機音效引擎 ================= */
   let audioCtx = null;
 
   function initAudio() {
@@ -752,93 +964,41 @@
   window.addEventListener('touchstart', initAudio, { once: true });
   window.addEventListener('click', initAudio, { once: true });
 
-  function playSoundStart() {
-    initAudio();
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    [523.25, 659.25, 783.99].forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, now + i * 0.06);
-      gain.gain.setValueAtTime(0.15, now + i * 0.06);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.18);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now + i * 0.06);
-      osc.stop(now + i * 0.06 + 0.18);
-    });
+  function updateMediaSession(durationText) {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `起點: ${selectedStart} ➔ 終點: ${selectedEnd}`,
+        artist: 'Camino Timer 朝聖計時器',
+        album: `計時時長: ${durationText}`,
+        artwork: [
+          { src: './icon.png', sizes: '96x96', type: 'image/png' },
+          { src: './icon.png', sizes: '128x128', type: 'image/png' },
+          { src: './icon.png', sizes: '192x192', type: 'image/png' },
+          { src: './icon.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => { if (isResting) toggleRest(); });
+      navigator.mediaSession.setActionHandler('pause', () => { if (!isResting) toggleRest(); });
+      navigator.mediaSession.setActionHandler('stop', () => { stopTimer(); });
+    }
   }
 
-  function playSoundJump() {
+  function playSoundAction() {
     initAudio();
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.15);
-  }
-
-  // 金幣收集成功音效 (高音悅耳提示)
-  function playSoundScore() {
-    initAudio();
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    [880, 1318.51].forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + i * 0.08);
-      gain.gain.setValueAtTime(0.15, now + i * 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now + i * 0.08);
-      osc.stop(now + i * 0.08 + 0.2);
-    });
-  }
-
-  function playSoundRest() {
-    initAudio();
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(isResting ? 320 : 480, now);
-    osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
-    gain.gain.setValueAtTime(0.2, now);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+    gain.gain.setValueAtTime(0.12, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start(now);
     osc.stop(now + 0.08);
-  }
-
-  function playSoundStop() {
-    initAudio();
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    [440, 554.37, 659.25, 880].forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + i * 0.08);
-      gain.gain.setValueAtTime(0.18, now + i * 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now + i * 0.08);
-      osc.stop(now + i * 0.08 + 0.35);
-    });
   }
 
   function playSoundStep() {
@@ -850,18 +1010,15 @@
     for (let i = 0; i < bufferSize; i++) {
       data[i] = Math.random() * 2 - 1;
     }
-
     const noise = audioCtx.createBufferSource();
     noise.buffer = buffer;
     const filter = audioCtx.createBiquadFilter();
     filter.type = 'bandpass';
     filter.frequency.setValueAtTime(350 + Math.random() * 100, now);
     filter.Q.setValueAtTime(1.8, now);
-
     const gain = audioCtx.createGain();
     gain.gain.setValueAtTime(0.08, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(audioCtx.destination);
@@ -884,40 +1041,212 @@
     osc.stop(now + 0.015);
   }
 
-  /* ============================================================= */
+  const stationDistances = {
+    "Oviedo": 0, "Grado": 26.5, "Salas": 48.5, "Tineo": 82.5, "Borres": 100.0,
+    "La Mesa": 115.0, "Grandas de Salime": 148.0, "A Fonsagrada": 182.0,
+    "O Cadavo Baleira": 207.0, "Lugo": 233.0, "Ferreira": 260.0,
+    "Melide": 285.0, "O Pedrouzo": 305.0, "Santiago": 321.0
+  };
 
-  const stations = [
-    "Oviedo", "Grado", "Salas", "Tineo", "Borres",
-    "La Mesa", "Grandas de Salime", "A Fonsagrada",
-    "O Cadavo Baleira", "Lugo", "Ferreira", "Melide",
-    "O Pedrouzo", "Santiago"
-  ];
+  const stations = Object.keys(stationDistances);
+
+  const stationStamps = {
+    "Oviedo": { 
+      name: "OVIEDO · SAN SALVADOR", 
+      desc: "以阿斯圖里亞斯王國的古都奧維耶多為起點，融合聖薩爾瓦多大教堂（Cathedral of San Salvador）的哥德式尖塔與十字架標誌，象徵原始之路（Camino Primitivo）朝聖之旅的莊嚴啟程。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#8B2014" stroke-width="3" stroke-dasharray="4,2"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#8B2014" stroke-width="1.5"/>
+        <path d="M15,50 Q50,30 85,50" fill="none" stroke="#8B2014" stroke-width="1"/>
+        <path d="M18,55 Q50,75 82,55" fill="none" stroke="#8B2014" stroke-width="1"/>
+        <text x="50" y="32" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#8B2014" text-anchor="middle">OVIEDO</text>
+        <text x="50" y="73" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">PEREGRINATIO</text>
+        <polygon points="50,38 53,46 61,46 55,51 57,59 50,54 43,59 45,51 39,46 47,46" fill="#8B2014"/>
+      </svg>` 
+    },
+    "Grado": { 
+      name: "GRADO · PUERTA DEL VALLE", 
+      desc: "格拉多素有「谷地之門」美譽，郵戳設計採用當地著名的中世紀古老市集拱門造型與圍繞的農田谷地意象，紀念朝聖者離開平原、正式進入山區前的補給站。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#723C13" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#723C13" stroke-width="1.5" stroke-dasharray="6,3"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#723C13" text-anchor="middle">GRADO</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#723C13" text-anchor="middle">VALLE DEL NALÓN</text>
+        <path d="M36,60 L36,44 Q50,32 64,44 L64,60 Z" fill="none" stroke="#723C13" stroke-width="2.5"/>
+        <path d="M44,60 L44,50 Q50,44 56,50 L56,60 Z" fill="#723C13"/>
+      </svg>` 
+    },
+    "Salas": { 
+      name: "SALAS · TORRE DE LOS VALDÉS", 
+      desc: "描繪薩拉斯地標巴爾代斯塔（Torre de los Valdés）防禦高塔與中世紀石橋。此處是原始之路的重要歷史據點，見證了過往貴族與朝聖者交會的足跡。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#8B2014" stroke-width="3" stroke-dasharray="2,2"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#8B2014" stroke-width="1.5"/>
+        <text x="50" y="31" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#8B2014" text-anchor="middle">SALAS</text>
+        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">TORRE MEDIEVAL</text>
+        <rect x="42" y="38" width="16" height="22" fill="none" stroke="#8B2014" stroke-width="2"/>
+        <rect x="46" y="42" width="8" height="8" fill="#8B2014"/>
+        <line x1="38" y1="60" x2="62" y2="60" stroke="#8B2014" stroke-width="2.5"/>
+      </svg>` 
+    },
+    "Tineo": { 
+      name: "TINEO · TERRA DE MONTE", 
+      desc: "蒂內奧群山環繞、歷史悠久。郵戳中央融入松柏山林與傳統朝聖手杖（Bordón），象徵朝聖者在此挑戰陡峭山徑、淬鍊意志的艱辛歷程。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#2D5A27" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#2D5A27" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#2D5A27" text-anchor="middle">TINEO</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#2D5A27" text-anchor="middle">MONTAÑA ALTA</text>
+        <polygon points="50,37 38,58 62,58" fill="#2D5A27"/>
+        <polygon points="50,43 42,60 58,60" fill="#FAF6EF" stroke="#2D5A27" stroke-width="1.5"/>
+        <rect x="48.5" y="40" width="3" height="22" fill="#2D5A27"/>
+      </svg>` 
+    },
+    "Borres": { 
+      name: "BORRES · HOSPITAL DE PEREGRINOS", 
+      desc: "紀念博雷斯中世紀知名的朝聖者庇護所遺址。郵戳刻畫古老庇護所的十字窗框與庇佑之光，在人煙稀少的山徑上給予朝聖者無限溫暖與希望。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#723C13" stroke-width="3" stroke-dasharray="5,2"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#723C13" stroke-width="1.5"/>
+        <text x="50" y="31" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#723C13" text-anchor="middle">BORRES</text>
+        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#723C13" text-anchor="middle">HOSPITAL</text>
+        <rect x="42" y="40" width="16" height="18" fill="none" stroke="#723C13" stroke-width="2"/>
+        <polygon points="50,34 38,42 62,42" fill="#723C13"/>
+        <circle cx="50" cy="49" r="3" fill="#723C13"/>
+      </svg>` 
+    },
+    "La Mesa": { 
+      name: "LA MESA · ALTOS DE CUMBRES", 
+      desc: "拉梅薩海拔高聳、視野遼闊。郵戳以層疊的高山稜線與天空雲海為主題，象徵朝聖者登高望遠、心靈獲得沈澱的高山隘口。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#5A4A42" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#5A4A42" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#5A4A42" text-anchor="middle">LA MESA</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#5A4A42" text-anchor="middle">CUMBRES 900M</text>
+        <path d="M32,58 L44,42 L56,52 L68,38 L68,58 Z" fill="#5A4A42" opacity="0.8"/>
+      </svg>` 
+    },
+    "Grandas de Salime": { 
+      name: "GRANDAS DE SALIME · EMBALSE", 
+      desc: "以壯麗的薩利梅水庫（Embalse de Grandas de Salime）與水力發電大壩為靈感，結合阿斯圖里亞斯山區的峽谷風光，展現現代工程與壯麗自然交織的景致。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#1D4E89" stroke-width="3" stroke-dasharray="4,2"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#1D4E89" stroke-width="1.5"/>
+        <text x="50" y="31" font-family="Cinzel, serif" font-size="7" font-weight="900" fill="#1D4E89" text-anchor="middle">GRANDAS DE SALIME</text>
+        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#1D4E89" text-anchor="middle">EMBALSE</text>
+        <path d="M32,45 Q50,38 68,45 L68,55 Q50,62 32,55 Z" fill="#1D4E89" opacity="0.3"/>
+        <path d="M38,42 L62,42 L66,58 L34,58 Z" fill="none" stroke="#1D4E89" stroke-width="2"/>
+      </svg>` 
+    },
+    "A Fonsagrada": { 
+      name: "A FONSAGRADA · FONTE SAGRADA", 
+      desc: "源自「聖泉」（Fonte Sagrada）的傳說歷史。郵戳中央雕刻湧動的聖泉水波與傳說十字架，相傳聖母曾在在此以清泉水洗滌朝聖者的疲憊與乾渴。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#0077B6" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#0077B6" stroke-width="1.5" stroke-dasharray="6,2"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="7.5" font-weight="900" fill="#0077B6" text-anchor="middle">A FONSAGRADA</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#0077B6" text-anchor="middle">FUENTE SAGRADA</text>
+        <path d="M38,48 Q44,42 50,48 Q56,54 62,48" fill="none" stroke="#0077B6" stroke-width="2.5"/>
+        <path d="M38,55 Q44,49 50,55 Q56,61 62,55" fill="none" stroke="#0077B6" stroke-width="2.5"/>
+      </svg>` 
+    },
+    "O Cadavo Baleira": { 
+      name: "O CADAVO BALEIRA · CAMIÑO DO NORTE", 
+      desc: "加利西亞大區的第一個山區重鎮，融合當地古老的石造村落屋瓦與橡木林意象，象徵朝聖者正式跨入加利西亞（Galicia）境內。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#8B2014" stroke-width="3" stroke-dasharray="3,3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#8B2014" stroke-width="1.5"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="7" font-weight="900" fill="#8B2014" text-anchor="middle">O CADAVO BALEIRA</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">GALICIA</text>
+        <rect x="41" y="42" width="18" height="16" fill="none" stroke="#8B2014" stroke-width="2"/>
+        <polygon points="50,34 37,42 63,42" fill="#8B2014"/>
+      </svg>` 
+    },
+    "Lugo": { 
+      name: "LUGO · MURALLA ROMANA", 
+      desc: "以盧戈世界文化遺產的羅馬古城牆（Muralla Romana）為造型。這座世界上保存最完整的古羅馬防禦工事環繞著舊城區，郵戳展現宏偉的城垛與石砌歷史。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#5A3E2B" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#5A3E2B" stroke-width="1.5" stroke-dasharray="5,2"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#5A3E2B" text-anchor="middle">LUGO</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#5A3E2B" text-anchor="middle">MURALLA ROMANA</text>
+        <path d="M34,56 L34,44 L40,44 L40,48 L46,48 L46,44 L54,44 L54,48 L60,48 L60,44 L66,44 L66,56 Z" fill="#5A3E2B"/>
+      </svg>` 
+    },
+    "Ferreira": { 
+      name: "FERREIRA · MONASTERIO DE SAN SALVADOR", 
+      desc: "紀念費雷拉著名的聖薩爾瓦多修道院（Monasterio de San Salvador）。郵戳描繪羅馬式修道院的圓拱窗與十字雕飾，充滿寧靜祥和的宗教藝術美感。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#723C13" stroke-width="3" stroke-dasharray="2,4"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#723C13" stroke-width="1.5"/>
+        <text x="50" y="31" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#723C13" text-anchor="middle">FERREIRA</text>
+        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#723C13" text-anchor="middle">MONASTERIO</text>
+        <path d="M38,58 L38,44 A12,12 0 0 1 62,44 L62,58 Z" fill="none" stroke="#723C13" stroke-width="2"/>
+        <line x1="50" y1="36" x2="50" y2="52" stroke="#723C13" stroke-width="2"/>
+        <line x1="44" y1="44" x2="56" y2="44" stroke="#723C13" stroke-width="2"/>
+      </svg>` 
+    },
+    "Melide": { 
+      name: "MELIDE · CRUCEIRO & PULPERÍA", 
+      desc: "梅利德是原始之路與法國之路（Camino Francés）的交會點。郵戳結合加利西亞最具代表性的石雕十字架（Cruceiro）與美味的傳統章魚美食意象，熱鬧非凡。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#D48439" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#D48439" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#D48439" text-anchor="middle">MELIDE</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#D48439" text-anchor="middle">CRUCEIRO</text>
+        <line x1="50" y1="35" x2="50" y2="62" stroke="#D48439" stroke-width="2.5"/>
+        <line x1="43" y1="42" x2="57" y2="42" stroke="#D48439" stroke-width="2.5"/>
+        <circle cx="50" cy="42" r="3" fill="#D48439"/>
+      </svg>` 
+    },
+    "O Pedrouzo": { 
+      name: "O PEDROUZO · ULTIMA ETAPA", 
+      desc: "距離聖地雅哥僅剩最後一站的奧佩德魯索。郵戳刻畫尤加利樹林與朝聖貝殼指引標誌，此時朝聖者心中充滿即將完成終極長征的喜悅與期待。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#2D5A27" stroke-width="3" stroke-dasharray="3,2"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#2D5A27" stroke-width="1.5"/>
+        <text x="50" y="30" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#2D5A27" text-anchor="middle">O PEDROUZO</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#2D5A27" text-anchor="middle">ULTIMA ETAPA</text>
+        <path d="M43,38 Q50,48 57,38 Q50,58 43,38 Z" fill="#2D5A27"/>
+      </svg>` 
+    },
+    "Santiago": { 
+      name: "SANTIAGO DE COMPOSTELA", 
+      desc: "朝聖之路的終點——聖地雅哥德孔波斯特拉大教堂。郵戳中央為象徵聖雅各的經典大型朝聖貝殼與放射狀榮耀光芒，標誌著朝聖者圓滿抵達終點、獲得完證（Compostela）的至高榮譽。", 
+      svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#E5A93C" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#E5A93C" stroke-width="1.5" stroke-dasharray="6,2"/>
+        <text x="50" y="29" font-family="Cinzel, serif" font-size="6" font-weight="900" fill="#E5A93C" text-anchor="middle">SANTIAGO DE COMPOSTELA</text>
+        <text x="50" y="77" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#E5A93C" text-anchor="middle">FIN DEL CAMINO</text>
+        <path d="M50,36 C55,44 63,47 63,55 C63,62 50,65 50,65 C50,65 37,62 37,55 C37,47 45,44 50,36 Z" fill="#E5A93C"/>
+        <line x1="50" y1="36" x2="50" y2="65" stroke="#FAF6EF" stroke-width="1"/>
+        <line x1="42" y1="45" x2="58" y2="45" stroke="#FAF6EF" stroke-width="0.8"/>
+        <line x1="40" y1="52" x2="60" y2="52" stroke="#FAF6EF" stroke-width="0.8"/>
+      </svg>` 
+    }
+  };
 
   let records = [];
   try {
     const raw = JSON.parse(localStorage.getItem('camino_records') || '[]');
     records = Array.isArray(raw) ? raw.filter(r => r && r.route && r.startDate && typeof r.duration === 'number') : [];
-  } catch (e) {
-    records = [];
-  }
+  } catch (e) { records = []; }
 
   let selectedStart = "", selectedEnd = "";
   let isTiming = false, isResting = false;
   let startTime = null, totalPauseTime = 0, restStartTime = null;
   let timerInterval = null, prevStr = "000000";
   let spriteFrame = 0, spriteInterval = null;
-
-  // 遊戲相關變數
   let currentScore = 0;
   let activeShells = [];
   let gameLoopInterval = null;
+  let lastSpawnedSecond = -1;
 
   const walkerGroup = document.getElementById('walkerGroup');
 
   function drawWalker(state, frame) {
     const skinColor = "#E0B392";
     const hairColor = "#2B1810";
-
     if (state === 'REST') {
       walkerGroup.innerHTML = `
         <rect x="4" y="18" width="9" height="13" fill="#3D251A" rx="1"/>
@@ -944,15 +1273,200 @@
   function init() {
     renderPickers();
     renderRecords();
+    updateProgressUI();
+    renderCredencial();
     drawWalker('REST', 0);
+  }
+
+  function openModal(id) {
+    playSoundAction();
+    document.getElementById(id).classList.add('open');
+    if (id === 'credencialModal') renderCredencial();
+  }
+
+  function closeModal(id) {
+    playSoundAction();
+    document.getElementById(id).classList.remove('open');
+  }
+
+  // 📥 核心功能：將 SVG 轉為去背透明 PNG 並儲存至相簿
+  function saveStampToAlbum(svgString, stampName) {
+    playSoundAction();
+    const cleanName = stampName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+    const filename = `Camino_Stamp_${cleanName}.png`;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(blob);
+    const img = new Image();
+
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(blobURL);
+
+      canvas.toBlob(async (pngBlob) => {
+        if (!pngBlob) return;
+        const file = new File([pngBlob], filename, { type: 'image/png' });
+
+        // 優先嘗試行動端原生 Share API (可直接存入手機相簿/照片)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: '朝聖之路郵戳',
+              text: `分享 ${stampName} 去背郵戳`
+            });
+            return;
+          } catch (err) {
+            if (err.name === 'AbortError') return; // 使用者取消分享
+          }
+        }
+
+        // 備用方案：自動觸發下載
+        const downloadUrl = URL.createObjectURL(pngBlob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+      }, 'image/png');
+    };
+
+    img.src = blobURL;
+  }
+
+  // 綁定長按事件處理常式
+  function setupLongPress(element, svgString, stampName) {
+    let pressTimer = null;
+    let isLongPress = false;
+
+    const startPress = (e) => {
+      isLongPress = false;
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        saveStampToAlbum(svgString, stampName);
+      }, 600); // 600毫秒視為長按
+    };
+
+    const cancelPress = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    };
+
+    element.addEventListener('touchstart', startPress, {passive: true});
+    element.addEventListener('touchend', cancelPress);
+    element.addEventListener('touchmove', cancelPress);
+    
+    element.addEventListener('mousedown', startPress);
+    element.addEventListener('mouseup', cancelPress);
+    element.addEventListener('mouseleave', cancelPress);
+
+    // 回傳判定是否為長按的函式供點擊事件使用
+    return () => isLongPress;
+  }
+
+  function renderCredencial() {
+    const grid = document.getElementById('credencialGrid');
+    grid.innerHTML = '';
+
+    const unlockedStations = new Set();
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        unlockedStations.add(parts[0]);
+        unlockedStations.add(parts[1]);
+      }
+    });
+    unlockedStations.add("Oviedo");
+
+    Object.keys(stationStamps).forEach(stKey => {
+      const stamp = stationStamps[stKey];
+      const isUnlocked = unlockedStations.has(stKey);
+      const card = document.createElement('div');
+      card.className = `sello-card ${isUnlocked ? 'unlocked' : ''}`;
+      card.innerHTML = `
+        <div class="sello-img-box">${stamp.svg}</div>
+        <div class="sello-name">${stKey}</div>
+      `;
+      if (isUnlocked) {
+        const checkLongPress = setupLongPress(card, stamp.svg, stKey);
+        card.onclick = () => {
+          if (checkLongPress()) return; // 若是長按觸發則不開啟彈窗
+          playSoundAction();
+          document.getElementById('stampModalTitle').innerText = stamp.name;
+          
+          // 渲染大圖並在詳細彈窗中也綁定長按儲存
+          const largeContainer = document.getElementById('stampLargeSvgContainer');
+          largeContainer.innerHTML = stamp.svg;
+          if (largeContainer.firstElementChild) {
+            setupLongPress(largeContainer.firstElementChild, stamp.svg, stKey);
+          }
+
+          document.getElementById('stampModalDesc').innerText = stamp.desc;
+          openModal('stampDetailModal');
+        };
+      }
+      grid.appendChild(card);
+    });
+  }
+
+  function getUsedStations() {
+    const usedStarts = new Set();
+    const usedEnds = new Set();
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        usedStarts.add(parts[0]);
+        usedEnds.add(parts[1]);
+      }
+    });
+    return { usedStarts, usedEnds };
+  }
+
+  function updateProgressUI() {
+    const totalDistance = 321.0;
+    let completedKm = 0;
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2 && stationDistances[parts[1]] !== undefined && stationDistances[parts[0]] !== undefined) {
+        completedKm += Math.abs(stationDistances[parts[1]] - stationDistances[parts[0]]);
+      } else {
+        completedKm += 15;
+      }
+    });
+    if (completedKm > totalDistance) completedKm = totalDistance;
+    const percent = Math.min(100, Math.round((completedKm / totalDistance) * 100));
+    const remainingKm = Math.max(0, (totalDistance - completedKm).toFixed(1));
+
+    document.getElementById('progressText').innerText = `距離聖地雅哥還有 ${remainingKm} 公里`;
+    document.getElementById('progressPercent').innerText = `${percent}%`;
+    document.getElementById('progressBarFill').style.width = `${percent}%`;
+
+    const btnStart = document.getElementById('btnStart');
+    if (percent >= 100) {
+      btnStart.disabled = true;
+      if (!isTiming) {
+        btnStart.innerText = '朝聖旅程已圓滿達成';
+      }
+    }
   }
 
   function togglePicker(type) {
     if (isTiming) return;
-    initAudio();
+    playSoundAction();
     const startCard = document.getElementById('startPickerCard');
     const endCard = document.getElementById('endPickerCard');
-
     if (type === 'start') {
       endCard.classList.remove('open');
       startCard.classList.toggle('open');
@@ -965,38 +1479,58 @@
   function renderPickers() {
     const startDropdown = document.getElementById('startDropdown');
     const endDropdown = document.getElementById('endDropdown');
-
     startDropdown.innerHTML = '';
     endDropdown.innerHTML = '';
 
-    if (!selectedStart && stations.length > 0) selectedStart = stations[0];
-    if (!selectedEnd && stations.length > 1) selectedEnd = stations[1];
+    const { usedStarts, usedEnds } = getUsedStations();
+
+    if (!selectedStart || usedStarts.has(selectedStart)) {
+      selectedStart = stations.find(st => !usedStarts.has(st)) || stations[0];
+    }
+    
+    const startIndex = stations.indexOf(selectedStart);
+    if (!selectedEnd || usedEnds.has(selectedEnd) || stations.indexOf(selectedEnd) <= startIndex) {
+      selectedEnd = stations.find((st, idx) => idx > startIndex && !usedEnds.has(st)) || stations[startIndex + 1] || stations[stations.length - 1];
+    }
 
     updatePickerUI();
 
     stations.forEach((st) => {
+      const isUsed = usedStarts.has(st);
       const startItem = document.createElement('div');
-      startItem.className = `option-item ${st === selectedStart ? 'selected' : ''}`;
-      startItem.innerText = st;
-      startItem.onclick = (e) => {
-        e.stopPropagation();
-        selectedStart = st;
-        document.getElementById('startPickerCard').classList.remove('open');
-        updatePickerUI();
-        renderPickers();
-      };
+      startItem.className = `option-item ${st === selectedStart ? 'selected' : ''} ${isUsed ? 'disabled' : ''}`;
+      startItem.innerText = st + (isUsed ? ' (已完成)' : '');
+      if (!isUsed) {
+        startItem.onclick = (e) => {
+          e.stopPropagation();
+          playSoundAction();
+          selectedStart = st;
+          const newStartIndex = stations.indexOf(st);
+          const validEnd = stations.find((s, idx) => idx > newStartIndex && !usedEnds.has(s));
+          selectedEnd = validEnd || stations[newStartIndex + 1] || stations[stations.length - 1];
+          document.getElementById('startPickerCard').classList.remove('open');
+          renderPickers();
+        };
+      }
       startDropdown.appendChild(startItem);
+    });
 
+    stations.forEach((st, idx) => {
+      const isUsed = usedEnds.has(st);
+      const isBeforeOrEqualStart = idx <= startIndex;
+      const isDisabled = isUsed || isBeforeOrEqualStart;
       const endItem = document.createElement('div');
-      endItem.className = `option-item ${st === selectedEnd ? 'selected' : ''}`;
-      endItem.innerText = st;
-      endItem.onclick = (e) => {
-        e.stopPropagation();
-        selectedEnd = st;
-        document.getElementById('endPickerCard').classList.remove('open');
-        updatePickerUI();
-        renderPickers();
-      };
+      endItem.className = `option-item ${st === selectedEnd ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
+      endItem.innerText = st + (isUsed ? ' (已完成)' : '');
+      if (!isDisabled) {
+        endItem.onclick = (e) => {
+          e.stopPropagation();
+          playSoundAction();
+          selectedEnd = st;
+          document.getElementById('endPickerCard').classList.remove('open');
+          renderPickers();
+        };
+      }
       endDropdown.appendChild(endItem);
     });
   }
@@ -1004,10 +1538,8 @@
   function updatePickerUI() {
     document.getElementById('startValue').innerText = selectedStart || "請選擇起點";
     document.getElementById('endValue').innerText = selectedEnd || "請選擇終點";
-
     const startCard = document.getElementById('startPickerCard');
     const endCard = document.getElementById('endPickerCard');
-
     if (selectedStart) startCard.classList.add('has-value'); else startCard.classList.remove('has-value');
     if (selectedEnd) endCard.classList.add('has-value'); else endCard.classList.remove('has-value');
   }
@@ -1036,8 +1568,7 @@
   }
 
   function resetClockDisplay() {
-    const ids = ['h1', 'h2', 'm1', 'm2', 's1', 's2'];
-    ids.forEach(id => {
+    ['h1', 'h2', 'm1', 'm2', 's1', 's2'].forEach(id => {
       const card = document.getElementById(id);
       card.querySelector('.top').innerText = '0';
       card.querySelector('.bottom').innerText = '0';
@@ -1048,14 +1579,54 @@
   }
 
   function handleMainAction() {
-    if (!isTiming) {
-      startTimer();
-    } else {
-      triggerJump();
-    }
+    playSoundAction();
+    if (!isTiming) { startTimer(); } else { triggerJump(); }
   }
 
-  // 判斷是否為質數
+  function spawnGoldenShell() {
+    const stage = document.getElementById('pixelStage');
+    const shell = document.createElement('div');
+    shell.className = 'pixel-shell';
+    let posX = stage.offsetWidth;
+    shell.style.left = posX + 'px';
+    shell.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20">
+        <path d="M10,2 C14,2 18,6 18,10 C18,14 14,18 10,18 C6,18 2,14 2,10 C2,6 6,2 10,2 Z" fill="#E5A93C" stroke="#723C13" stroke-width="1"/>
+        <path d="M10,18 L10,6 M10,6 L6,12 M10,6 L14,12 M10,6 L8,14 M10,6 L12,14" stroke="#FFFDF8" stroke-width="0.8" stroke-linecap="round"/>
+      </svg>
+    `;
+    stage.appendChild(shell);
+    activeShells.push({ element: shell, x: posX, collected: false });
+  }
+
+  let isJumping = false;
+  function triggerJump() {
+    if (isResting) return;
+    const walker = document.getElementById('walkerSvg');
+    walker.classList.add('jump');
+    isJumping = true;
+    checkCollision();
+    setTimeout(() => {
+      walker.classList.remove('jump');
+      isJumping = false;
+    }, 200);
+  }
+
+  function checkCollision() {
+    const walkerLeft = 45;
+    const walkerRight = walkerLeft + 32;
+    activeShells.forEach(shell => {
+      if (!shell.collected && isJumping) {
+        if (shell.x >= walkerLeft - 15 && shell.x <= walkerRight) {
+          shell.collected = true;
+          currentScore++;
+          document.getElementById('scoreBoard').innerText = `Score: ${currentScore}`;
+          shell.element.remove();
+        }
+      }
+    });
+  }
+
   function isPrime(num) {
     if (num <= 1) return false;
     if (num <= 3) return true;
@@ -1066,75 +1637,17 @@
     return true;
   }
 
-  // 生成金色扇貝 SVG 元素
-  function spawnGoldenShell() {
-    const stage = document.getElementById('pixelStage');
-    const shell = document.createElement('div');
-    shell.className = 'pixel-shell';
-    // 從畫面右側生成
-    let posX = stage.offsetWidth;
-    shell.style.left = posX + 'px';
-
-    shell.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 20 20">
-        <path d="M10,2 C14,2 18,6 18,10 C18,14 14,18 10,18 C6,18 2,14 2,10 C2,6 6,2 10,2 Z" fill="#E5A93C" stroke="#723C13" stroke-width="1"/>
-        <path d="M10,18 L10,6 M10,6 L6,12 M10,6 L14,12 M10,6 L8,14 M10,6 L12,14" stroke="#FFFDF8" stroke-width="0.8" stroke-linecap="round"/>
-      </svg>
-    `;
-    stage.appendChild(shell);
-
-    activeShells.push({
-      element: shell,
-      x: posX,
-      collected: false
-    });
-  }
-
-  // 小人跳躍互動與碰撞偵測
-  let isJumping = false;
-  function triggerJump() {
-    if (isResting) return;
-    playSoundJump();
-    const walker = document.getElementById('walkerSvg');
-    walker.classList.add('jump');
-    isJumping = true;
-
-    // 檢查碰撞（人物固定在 left: 45px，寬度約 32px）
-    checkCollision();
-
-    setTimeout(() => {
-      walker.classList.remove('jump');
-      isJumping = false;
-    }, 200);
-  }
-
-  function checkCollision() {
-    const walkerLeft = 45;
-    const walkerRight = walkerLeft + 32;
-
-    activeShells.forEach(shell => {
-      if (!shell.collected && isJumping) {
-        // 貝殼與人物水平位置重疊判定
-        if (shell.x >= walkerLeft - 15 && shell.x <= walkerRight) {
-          shell.collected = true;
-          currentScore++;
-          document.getElementById('scoreBoard').innerText = `Score: ${currentScore}`;
-          playSoundScore();
-          shell.element.remove();
-        }
-      }
-    });
-  }
-
   function startTimer() {
     if (!selectedStart || !selectedEnd) return;
-    playSoundStart();
 
     isTiming = true; isResting = false;
     startTime = new Date(); totalPauseTime = 0;
     currentScore = 0;
+    lastSpawnedSecond = -1;
     document.getElementById('scoreBoard').innerText = `Score: 0`;
     activeShells = [];
+
+    updateMediaSession("00:00:00");
 
     document.getElementById('startPickerCard').classList.remove('open');
     document.getElementById('endPickerCard').classList.remove('open');
@@ -1154,26 +1667,19 @@
 
     timerInterval = setInterval(tick, 1000);
 
-    // 遊戲物件移動與碰撞監控循環 (比背景山快一點點，背景山 12s~18s，此處以微幅像素遞減實現)
     gameLoopInterval = setInterval(() => {
       if (isResting) return;
-      
       activeShells.forEach((shell, index) => {
-        shell.x -= 3.5; // 移動速度微調
+        shell.x -= 3.5;
         shell.element.style.left = shell.x + 'px';
-
-        // 即時飛行中檢測碰撞
         const walkerLeft = 45;
         const walkerRight = walkerLeft + 32;
         if (!shell.collected && isJumping && shell.x >= walkerLeft - 15 && shell.x <= walkerRight) {
           shell.collected = true;
           currentScore++;
           document.getElementById('scoreBoard').innerText = `Score: ${currentScore}`;
-          playSoundScore();
           shell.element.remove();
         }
-
-        // 移出畫面後回收
         if (shell.x < -30) {
           shell.element.remove();
           activeShells.splice(index, 1);
@@ -1191,11 +1697,15 @@
     const min = Math.floor(diff / (1000 * 60)) % 60;
     const hrs = Math.floor(diff / (1000 * 60 * 60));
 
-    // 檢查總表秒數是否為質數，若是則生成金色扇貝
     const totalSecs = Math.floor(diff / 1000);
-    if (!isResting && isPrime(totalSecs)) {
+    
+    if (!isResting && totalSecs > 0 && totalSecs !== lastSpawnedSecond && isPrime(totalSecs)) {
+      lastSpawnedSecond = totalSecs;
       spawnGoldenShell();
     }
+
+    const durationFormatted = `${String(hrs).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    updateMediaSession(durationFormatted);
 
     const str = String(hrs).padStart(2,'0') + String(min).padStart(2,'0') + String(sec).padStart(2,'0');
     if (str[0] !== prevStr[0]) updateFlip('h1', str[0]);
@@ -1207,13 +1717,11 @@
     prevStr = str;
 
     document.getElementById('restClock').innerText = fmtMS(currentRest);
-
     playSoundTick();
   }
 
   function toggleRest() {
-    playSoundRest();
-
+    playSoundAction();
     const stage = document.getElementById('pixelStage');
     const btnRest = document.getElementById('btnRest');
     const btnStart = document.getElementById('btnStart');
@@ -1226,7 +1734,6 @@
       drawWalker('REST', 0);
       btnRest.classList.add('resting');
       btnRest.innerText = 'RESUME (繼續)';
-      
       btnStart.disabled = true;
       btnStart.innerText = '💤 坐下休息中 (無法跳躍)';
     } else {
@@ -1240,14 +1747,13 @@
       }, 250);
       btnRest.classList.remove('resting');
       btnRest.innerText = 'PAUSE / REST';
-      
       btnStart.disabled = false;
       btnStart.innerText = '✨ 跳躍！ (JUMP)';
     }
   }
 
   function stopTimer() {
-    playSoundStop();
+    playSoundAction();
 
     const endTime = new Date();
     if (isResting) totalPauseTime += (endTime - restStartTime);
@@ -1256,7 +1762,6 @@
     clearInterval(spriteInterval);
     clearInterval(gameLoopInterval);
 
-    // 清除剩餘畫面上的貝殼
     activeShells.forEach(s => s.element.remove());
     activeShells = [];
 
@@ -1264,21 +1769,15 @@
     drawWalker('REST', 0);
 
     const routeName = `${selectedStart} ➔ ${selectedEnd}`;
-
-
-    
-records.unshift({
+    records.unshift({
       id: Date.now(),
-      route: routeName, // 只存起訖站
+      route: routeName,
       startDate: `${endTime.getFullYear()}.${String(endTime.getMonth()+1).padStart(2,'0')}.${String(endTime.getDate()).padStart(2,'0')}`,
       endTime: `${String(endTime.getHours()).padStart(2,'0')}:${String(endTime.getMinutes()).padStart(2,'0')}`,
       duration: endTime - startTime,
       rest: totalPauseTime,
       shells: currentScore
     });
-
-
-    
 
     localStorage.setItem('camino_records', JSON.stringify(records));
     isTiming = false; isResting = false;
@@ -1293,7 +1792,10 @@ records.unshift({
     document.getElementById('scoreBoard').innerText = `Score: 0`;
 
     resetClockDisplay();
+    renderPickers();
     renderRecords();
+    updateProgressUI();
+    renderCredencial();
   }
 
   function fmtMS(ms) {
@@ -1304,11 +1806,7 @@ records.unshift({
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
 
-
-
-
-
-function renderRecords() {
+  function renderRecords() {
     const list = document.getElementById('recordsList');
     if (!records || records.length === 0) {
       list.innerHTML = '<div class="empty-tip">尚無行走紀錄</div>';
@@ -1316,13 +1814,10 @@ function renderRecords() {
       return;
     }
     list.innerHTML = '';
-
     records.forEach((r, idx) => {
-      // 統一檢查貝殼數，若大於等於 0 則顯示標籤
       const shellDisplay = (r.shells !== undefined && r.shells > 0) 
         ? `<span style="color: var(--btn-rest-bg); font-weight: 800; font-size: 11px; margin-left: 6px;">🐚 獲得 ${r.shells} 個</span>` 
         : '';
-
       const card = document.createElement('div');
       card.className = 'record-card';
       card.dataset.idx = idx;
@@ -1342,13 +1837,8 @@ function renderRecords() {
       enableDrag(card);
       list.appendChild(card);
     });
-
     updateBatchDeleteBtn();
   }
-
-
-
-  
 
   function updateBatchDeleteBtn() {
     const checkedCount = document.querySelectorAll('.del-chk:checked').length;
@@ -1362,12 +1852,15 @@ function renderRecords() {
   }
 
   function deleteSelected() {
-    initAudio();
+    playSoundAction();
     const chks = document.querySelectorAll('.del-chk:checked');
     const ids = Array.from(chks).map(c => Number(c.value));
     records = records.filter(r => !ids.includes(r.id));
     localStorage.setItem('camino_records', JSON.stringify(records));
+    renderPickers();
     renderRecords();
+    updateProgressUI();
+    renderCredencial();
   }
 
   function enableDrag(el) {
