@@ -754,6 +754,13 @@
     align-items: center;
     background: transparent;
     flex-shrink: 0;
+    cursor: pointer;
+  }
+  .stamp-download-hint {
+    font-size: 10px;
+    font-weight: 800;
+    color: #8C7B75;
+    letter-spacing: 0.3px;
   }
   #stampModalDesc {
     font-size: 12px;
@@ -763,13 +770,173 @@
     white-space: normal;
     word-break: break-all;
   }
+
+  /* 天氣小徽章 */
+  .weather-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #5A4A42;
+    white-space: nowrap;
+  }
+  .weather-badge .w-icon { font-size: 14px; }
+
+  /* 統計總覽 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .stat-box {
+    background: #E2D7C5;
+    border: 2px solid #C4B59D;
+    border-radius: 14px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--btn-start-bg);
+  }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #6E5D54;
+    text-align: center;
+    white-space: normal;
+  }
+  .btn-share-card {
+    width: 100%;
+    height: 44px;
+    background: var(--header-dark);
+    color: var(--text-gold);
+    border: 1px solid var(--accent-yellow);
+    border-radius: 14px;
+    font-family: var(--font-ui);
+    font-weight: 900;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-share-card:active { background: var(--accent-yellow); color: var(--header-dark); }
+
+  /* 紀錄卡片新增元素 */
+  .record-edit-btn {
+    background: none;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 4px;
+    opacity: 0.7;
+  }
+  .record-note-flag {
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  /* 編輯紀錄彈窗表單 */
+  .edit-field-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #6E5D54;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .edit-select, .edit-textarea {
+    width: 100%;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    color: #2B1810;
+    background: #FAF6EF;
+    border: 2px solid #C4B59D;
+    border-radius: 10px;
+    padding: 8px 10px;
+    white-space: normal;
+  }
+  .edit-textarea {
+    min-height: 60px;
+    resize: vertical;
+    white-space: pre-wrap;
+  }
+  .edit-time-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .edit-time-row input {
+    width: 100%;
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 800;
+    background: #FAF6EF;
+    border: 2px solid #C4B59D;
+    border-radius: 10px;
+    padding: 8px 0;
+  }
+  .edit-photo-preview {
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid #C4B59D;
+    display: none;
+  }
+  .edit-photo-preview.show { display: block; }
+  .btn-photo-remove {
+    font-size: 11px;
+    color: var(--btn-start-bg);
+    background: none;
+    border: none;
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: underline;
+    display: none;
+  }
+  .btn-photo-remove.show { display: inline-block; }
+  .modal-footer-row {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-modal-save {
+    flex: 1;
+    height: 44px;
+    background: var(--btn-start-bg);
+    color: var(--text-cream);
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-ui);
+    font-weight: 900;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-modal-delete {
+    flex: 1;
+    height: 44px;
+    background: var(--btn-stop-bg);
+    color: var(--text-cream);
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-ui);
+    font-weight: 900;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #shareCanvas { display: none; }
 </style>
 </head>
 <body>
 
 <div class="app-container">
   <div class="header-nav">
-    <div style="width: 48px;"></div>
+    <button class="header-btn" onclick="openStatsModal()">📊 統計</button>
     <div class="brand-title">CAMINO TIMER</div>
     <button class="header-btn" onclick="openModal('credencialModal')">📜 護照</button>
   </div>
@@ -781,6 +948,10 @@
     </div>
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" id="progressBarFill"></div>
+    </div>
+    <div class="weather-badge" id="weatherBadge" style="display:none;">
+      <span class="w-icon" id="weatherIcon">🌤️</span>
+      <span id="weatherText">--</span>
     </div>
   </div>
 
@@ -934,6 +1105,72 @@
   </div>
 </div>
 
+<!-- 📊 統計總覽彈跳視窗 -->
+<div class="modal-overlay" id="statsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>📊 旅程統計總覽</span>
+      <button class="modal-close" onclick="closeModal('statsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="stats-grid" id="statsGrid"></div>
+      <button class="btn-share-card" onclick="generateShareCard()">📤 產生分享成就卡</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✏️ 編輯紀錄彈跳視窗 -->
+<div class="modal-overlay" id="editRecordModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>✏️ 編輯行走紀錄</span>
+      <button class="modal-close" onclick="closeModal('editRecordModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="edit-field-label">起點</div>
+        <select class="edit-select" id="editStartSelect"></select>
+      </div>
+      <div>
+        <div class="edit-field-label">終點</div>
+        <select class="edit-select" id="editEndSelect"></select>
+      </div>
+      <div>
+        <div class="edit-field-label">行走時間 (時 / 分 / 秒)</div>
+        <div class="edit-time-row">
+          <input type="number" min="0" id="editHrs" inputmode="numeric">
+          <input type="number" min="0" max="59" id="editMins" inputmode="numeric">
+          <input type="number" min="0" max="59" id="editSecs" inputmode="numeric">
+        </div>
+      </div>
+      <div>
+        <div class="edit-field-label">休息時間 (時 / 分 / 秒)</div>
+        <div class="edit-time-row">
+          <input type="number" min="0" id="editRestHrs" inputmode="numeric">
+          <input type="number" min="0" max="59" id="editRestMins" inputmode="numeric">
+          <input type="number" min="0" max="59" id="editRestSecs" inputmode="numeric">
+        </div>
+      </div>
+      <div>
+        <div class="edit-field-label">筆記 / 心得</div>
+        <textarea class="edit-textarea" id="editNote" placeholder="今天的風景、感受、遇到的人..."></textarea>
+      </div>
+      <div>
+        <div class="edit-field-label">照片</div>
+        <img class="edit-photo-preview" id="editPhotoPreview">
+        <input type="file" accept="image/*" id="editPhotoInput" onchange="handlePhotoInput(event)" style="margin-top:6px;">
+        <button class="btn-photo-remove" id="editPhotoRemoveBtn" onclick="removeEditPhoto()">移除照片</button>
+      </div>
+      <div class="modal-footer-row">
+        <button class="btn-modal-save" onclick="saveEditRecord()">儲存</button>
+        <button class="btn-modal-delete" onclick="deleteFromEditModal()">刪除此紀錄</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<canvas id="shareCanvas" width="800" height="1000"></canvas>
+
 <!-- 🔍 郵戳詳細介紹彈跳視窗 -->
 <div class="modal-overlay" id="stampDetailModal">
   <div class="modal-content">
@@ -943,6 +1180,7 @@
     </div>
     <div class="modal-body stamp-detail-box">
       <div class="stamp-large-circle" id="stampLargeSvgContainer"></div>
+      <div class="stamp-download-hint">💾 雙擊郵戳圖案，下載去背 PNG</div>
       <div id="stampModalDesc"></div>
     </div>
   </div>
@@ -1032,20 +1270,28 @@
   const stationStamps = {
     "Oviedo": { 
       name: "OVIEDO · SAN SALVADOR", 
-      desc: "以阿斯圖里亞斯王國的古都奧維耶多為起點，融合聖薩爾瓦多大教堂（Cathedral of San Salvador）的哥德式尖塔與十字架標誌，象徵原始之路（Camino Primitivo）朝聖之旅的莊嚴啟程。", 
+      desc: "以阿斯圖里亞斯王國古都奧維耶多為起點，融合聖薩爾瓦多主教座堂（Catedral de San Salvador）與收藏聖髑的卡馬拉聖堂（Cámara Santa）。郵戳中央刻畫阿斯圖里亞斯王室傳世聖物「勝利十字架」（Cruz de la Victoria）造型，紀念原始之路（Camino Primitivo）——最古老朝聖路線——自此莊嚴啟程。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#8B2014" stroke-width="3" stroke-dasharray="4,2"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#8B2014" stroke-width="1.5"/>
         <path d="M15,50 Q50,30 85,50" fill="none" stroke="#8B2014" stroke-width="1"/>
         <path d="M18,55 Q50,75 82,55" fill="none" stroke="#8B2014" stroke-width="1"/>
         <text x="50" y="32" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#8B2014" text-anchor="middle">OVIEDO</text>
-        <text x="50" y="73" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">PEREGRINATIO</text>
-        <polygon points="50,38 53,46 61,46 55,51 57,59 50,54 43,59 45,51 39,46 47,46" fill="#8B2014"/>
+        <text x="50" y="73" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">CRUZ DE LA VICTORIA</text>
+        <g stroke="#8B2014" stroke-width="3" stroke-linecap="round" fill="none">
+          <line x1="50" y1="36" x2="50" y2="62"/>
+          <line x1="39" y1="45" x2="61" y2="45"/>
+        </g>
+        <circle cx="50" cy="36" r="3" fill="#8B2014"/>
+        <circle cx="50" cy="62" r="3" fill="#8B2014"/>
+        <circle cx="39" cy="45" r="3" fill="#8B2014"/>
+        <circle cx="61" cy="45" r="3" fill="#8B2014"/>
+        <circle cx="50" cy="45" r="3.5" fill="#8B2014"/>
       </svg>` 
     },
     "Grado": { 
       name: "GRADO · PUERTA DEL VALLE", 
-      desc: "格拉多素有「谷地之門」美譽，郵戳設計採用當地著名的中世紀古老市集拱門造型與圍繞的農田谷地意象，紀念朝聖者離開平原、正式進入山區前的補給站。", 
+      desc: "格拉多地處納龍河（Río Nalón）與諾納亞河谷（Valle del Nonaya）交會處，自古即是阿斯圖里亞斯沿海平原通往內陸山區的重要市集要塞，人稱「谷地之門」。郵戳的拱門造型呼應當地中世紀石橋與市集廣場，紀念朝聖者告別平原、正式邁向山區的第一段旅程。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#723C13" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#723C13" stroke-width="1.5" stroke-dasharray="6,3"/>
@@ -1056,13 +1302,13 @@
       </svg>` 
     },
     "Salas": { 
-      name: "SALAS · TORRE DE LOS VALDÉS", 
-      desc: "描繪薩拉斯地標巴爾代斯塔（Torre de los Valdés）防禦高塔與中世紀石橋。此處是原始之路的重要歷史據點，見證了過往貴族與朝聖者交會的足跡。", 
+      name: "SALAS · TORRE Y PALACIO DE VALDÉS", 
+      desc: "薩拉斯舊城區保存完整，以大主教瓦德斯－薩拉斯（Fernando de Valdés y Salas）於16世紀興建的宮殿高塔，以及聖母瑪利亞大合議教堂（Colegiata de Santa María la Mayor）聞名於世，是原始之路上舉足輕重的歷史古鎮。郵戳描繪這座見證貴族與朝聖者足跡交會的地標高塔。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#8B2014" stroke-width="3" stroke-dasharray="2,2"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#8B2014" stroke-width="1.5"/>
         <text x="50" y="31" font-family="Cinzel, serif" font-size="9" font-weight="900" fill="#8B2014" text-anchor="middle">SALAS</text>
-        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">TORRE MEDIEVAL</text>
+        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">TORRE DE VALDÉS</text>
         <rect x="42" y="38" width="16" height="22" fill="none" stroke="#8B2014" stroke-width="2"/>
         <rect x="46" y="42" width="8" height="8" fill="#8B2014"/>
         <line x1="38" y1="60" x2="62" y2="60" stroke="#8B2014" stroke-width="2.5"/>
@@ -1070,7 +1316,7 @@
     },
     "Tineo": { 
       name: "TINEO · TERRA DE MONTE", 
-      desc: "蒂內奧群山環繞、歷史悠久。郵戳中央融入松柏山林與傳統朝聖手杖（Bordón），象徵朝聖者在此挑戰陡峭山徑、淬鍊意志的艱辛歷程。", 
+      desc: "蒂內奧位居山丘之上、群山環繞，鄰近的「拉艾斯皮納」（La Espina）曾是原始之路上朝聖醫院聚集的十字要衝。郵戳中央融入蒼翠松柏山林與傳統朝聖手杖（Bordón），象徵朝聖者在栗樹與橡木林間攀越陡峭山徑、淬鍊意志的艱辛歷程。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#2D5A27" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#2D5A27" stroke-width="1.5" stroke-dasharray="4,4"/>
@@ -1083,7 +1329,7 @@
     },
     "Borres": { 
       name: "BORRES · HOSPITAL DE PEREGRINOS", 
-      desc: "紀念博雷斯中世紀知名的朝聖者庇護所遺址。郵戳刻畫古老庇護所的十字窗框與庇佑之光，在人煙稀少的山徑上給予朝聖者無限溫暖與希望。", 
+      desc: "博雷斯的朝聖者庇護所歷史悠久，相傳由阿斯圖里亞斯國王阿方索三世「大帝」（Alfonso III el Magno）捐贈設立，是原始之路上文獻記載最早的庇護所之一。村中的聖母教堂（Santa María de Borres）至今仍留有羅馬式建築遺跡，靜靜見證往昔朝聖者在此獲得的庇護與溫暖。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#723C13" stroke-width="3" stroke-dasharray="5,2"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#723C13" stroke-width="1.5"/>
@@ -1095,19 +1341,19 @@
       </svg>` 
     },
     "La Mesa": { 
-      name: "LA MESA · ALTOS DE CUMBRES", 
-      desc: "拉梅薩海拔高聳、視野遼闊。郵戳以層疊的高山稜線與天空雲海為主題，象徵朝聖者登高望遠、心靈獲得沈澱的高山隘口。", 
+      name: "LA MESA · PUERTO DEL PALO", 
+      desc: "拉梅薩地處知名的「帕洛山口」（Puerto del Palo）一帶，是原始之路公認最為艱辛的路段之一，沿途可見石板屋頂民居與布斯波爾山脈（Sierra del Buspol）壯闊稜線。郵戳以層疊山巒與雲海為主題，紀念朝聖者登高望遠、心靈於此沈澱的高山隘口。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#5A4A42" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#5A4A42" stroke-width="1.5" stroke-dasharray="3,3"/>
         <text x="50" y="30" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#5A4A42" text-anchor="middle">LA MESA</text>
-        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#5A4A42" text-anchor="middle">CUMBRES 900M</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#5A4A42" text-anchor="middle">PUERTO DEL PALO</text>
         <path d="M32,58 L44,42 L56,52 L68,38 L68,58 Z" fill="#5A4A42" opacity="0.8"/>
       </svg>` 
     },
     "Grandas de Salime": { 
       name: "GRANDAS DE SALIME · EMBALSE", 
-      desc: "以壯麗的薩利梅水庫（Embalse de Grandas de Salime）與水力發電大壩為靈感，結合阿斯圖里亞斯山區的峽谷風光，展現現代工程與壯麗自然交織的景致。", 
+      desc: "以壯麗的薩利梅水庫（Embalse de Grandas de Salime）為靈感，這座1950年代興建的水力發電大壩，曾使舊薩利梅村落與多座中世紀石橋沉入水底。鎮上的聖薩爾瓦多合議教堂（Colegiata de San Salvador）與民族學博物館，則靜靜保存著阿斯圖里亞斯山區的傳統生活記憶。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#1D4E89" stroke-width="3" stroke-dasharray="4,2"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#1D4E89" stroke-width="1.5"/>
@@ -1119,7 +1365,7 @@
     },
     "A Fonsagrada": { 
       name: "A FONSAGRADA · FONTE SAGRADA", 
-      desc: "源自「聖泉」（Fonte Sagrada）的傳說歷史。郵戳中央雕刻湧動的聖泉水波與傳說十字架，相傳聖母曾在在此以清泉水洗滌朝聖者的疲憊與乾渴。", 
+      desc: "加利西亞海拔最高的城鎮，村名源自「聖泉」（Fonte Sagrada）的古老傳說。朝聖者翻越海拔逾950公尺的阿賽波山口（Puerto del Acebo）、告別阿斯圖里亞斯正式踏入加利西亞後，相傳便會在此以清泉水洗滌旅途的疲憊與乾渴。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#0077B6" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#0077B6" stroke-width="1.5" stroke-dasharray="6,2"/>
@@ -1130,20 +1376,22 @@
       </svg>` 
     },
     "O Cadavo Baleira": { 
-      name: "O CADAVO BALEIRA · CAMIÑO DO NORTE", 
-      desc: "加利西亞大區的第一個山區重鎮，融合當地古老的石造村落屋瓦與橡木林意象，象徵朝聖者正式跨入加利西亞（Galicia）境內。", 
+      name: "O CADAVO BALEIRA · CONCELLO DE BALEIRA", 
+      desc: "歐卡達沃是巴萊拉市鎮（Concello de Baleira）的首府，相傳阿斯圖里亞斯國王阿方索二世「純潔者」（Alfonso II el Casto）——史上首位遠赴聖地雅哥朝聖的君王——曾在此擊退摩爾軍隊，此傳說至今仍留存於巴萊拉的古老徽章中。教堂旁昔日設有朝聖醫院，庇護著翻山越嶺而來的旅人。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#8B2014" stroke-width="3" stroke-dasharray="3,3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#8B2014" stroke-width="1.5"/>
         <text x="50" y="30" font-family="Cinzel, serif" font-size="7" font-weight="900" fill="#8B2014" text-anchor="middle">O CADAVO BALEIRA</text>
-        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">GALICIA</text>
+        <text x="50" y="76" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#8B2014" text-anchor="middle">CONCELLO DE BALEIRA</text>
         <rect x="41" y="42" width="18" height="16" fill="none" stroke="#8B2014" stroke-width="2"/>
         <polygon points="50,34 37,42 63,42" fill="#8B2014"/>
+        <line x1="50" y1="45" x2="50" y2="53" stroke="#8B2014" stroke-width="1.5"/>
+        <line x1="46" y1="49" x2="54" y2="49" stroke="#8B2014" stroke-width="1.5"/>
       </svg>` 
     },
     "Lugo": { 
       name: "LUGO · MURALLA ROMANA", 
-      desc: "以盧戈世界文化遺產的羅馬古城牆（Muralla Romana）為造型。這座世界上保存最完整的古羅馬防禦工事環繞著舊城區，郵戳展現宏偉的城垛與石砌歷史。", 
+      desc: "盧戈的羅馬古城牆（Muralla Romana）建於西元3世紀，是世界上保存最完整、且唯一完全環繞城市的古羅馬城牆，已列入世界文化遺產。郵戳以厚實城垛為造型，展現這座原始之路沿途唯一的大城市，其悠久防禦工事與石砌歷史。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#5A3E2B" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#5A3E2B" stroke-width="1.5" stroke-dasharray="5,2"/>
@@ -1153,21 +1401,22 @@
       </svg>` 
     },
     "Ferreira": { 
-      name: "FERREIRA · MONASTERIO DE SAN SALVADOR", 
-      desc: "紀念費雷拉著名的聖薩爾瓦多修道院（Monasterio de San Salvador）。郵戳描繪羅馬式修道院的圓拱窗與十字雕飾，充滿寧靜祥和的宗教藝術美感。", 
+      name: "FERREIRA · PONTE DO CAMIÑO", 
+      desc: "費雷拉是盧戈通往梅利德途中的寧靜農村驛站，昔日人煙稀少，如今因朝聖者往來而重現生機。附近的「莫斯泰拉」（Mosteira）地名，暗示此地曾有修道院聚落的蹤跡；沿途散落的鄉間小教堂與石橋，靜靜守候著跋涉而來的旅人。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#723C13" stroke-width="3" stroke-dasharray="2,4"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#723C13" stroke-width="1.5"/>
         <text x="50" y="31" font-family="Cinzel, serif" font-size="8" font-weight="900" fill="#723C13" text-anchor="middle">FERREIRA</text>
-        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#723C13" text-anchor="middle">MONASTERIO</text>
-        <path d="M38,58 L38,44 A12,12 0 0 1 62,44 L62,58 Z" fill="none" stroke="#723C13" stroke-width="2"/>
-        <line x1="50" y1="36" x2="50" y2="52" stroke="#723C13" stroke-width="2"/>
-        <line x1="44" y1="44" x2="56" y2="44" stroke="#723C13" stroke-width="2"/>
+        <text x="50" y="74" font-family="Montserrat, sans-serif" font-size="6" font-weight="800" fill="#723C13" text-anchor="middle">PONTE DO CAMIÑO</text>
+        <path d="M30,58 Q50,40 70,58" fill="none" stroke="#723C13" stroke-width="2.5"/>
+        <line x1="30" y1="58" x2="30" y2="64" stroke="#723C13" stroke-width="2.5"/>
+        <line x1="70" y1="58" x2="70" y2="64" stroke="#723C13" stroke-width="2.5"/>
+        <line x1="26" y1="64" x2="74" y2="64" stroke="#723C13" stroke-width="2.5"/>
       </svg>` 
     },
     "Melide": { 
       name: "MELIDE · CRUCEIRO & PULPERÍA", 
-      desc: "梅利德是原始之路與法國之路（Camino Francés）的交會點。郵戳結合加利西亞最具代表性的石雕十字架（Cruceiro）與美味的傳統章魚美食意象，熱鬧非凡。", 
+      desc: "梅利德是原始之路與法國之路（Camino Francés）匯流的重要城鎮，此後兩條路線合而為一，共赴聖地雅哥。郵戳結合加利西亞最具代表性的石雕十字架（Cruceiro）與當地聞名遐邇的加利西亞式章魚料理（Pulpo à Feira）意象，見證此地朝聖人潮匯聚的熱鬧光景。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#D48439" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#D48439" stroke-width="1.5" stroke-dasharray="4,3"/>
@@ -1180,7 +1429,7 @@
     },
     "O Pedrouzo": { 
       name: "O PEDROUZO · ULTIMA ETAPA", 
-      desc: "距離聖地雅哥僅剩最後一站的奧佩德魯索。郵戳刻畫尤加利樹林與朝聖貝殼指引標誌，此時朝聖者心中充滿即將完成終極長征的喜悅與期待。", 
+      desc: "距離聖地雅哥僅剩一日路程的奧佩德魯索，沿途遍布尤加利樹林，是原始之路與法國之路匯流後的最後一個主要驛站。郵戳刻畫林蔭步道與朝聖貝殼指標，捕捉朝聖者即將完成長途跋涉前，心中滿溢的喜悅與期待。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#2D5A27" stroke-width="3" stroke-dasharray="3,2"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#2D5A27" stroke-width="1.5"/>
@@ -1191,7 +1440,7 @@
     },
     "Santiago": { 
       name: "SANTIAGO DE COMPOSTELA", 
-      desc: "朝聖之路的終點——聖地雅哥德孔波斯特拉大教堂。郵戳中央為象徵聖雅各的經典大型朝聖貝殼與放射狀榮耀光芒，標誌著朝聖者圓滿抵達終點、獲得完證（Compostela）的至高榮譽。", 
+      desc: "原始之路的終點——聖地雅哥德孔波斯特拉大教堂，相傳供奉著使徒聖雅各的聖髑。郵戳中央為象徵聖雅各的經典朝聖貝殼（Vieira）與放射狀榮耀光芒，標誌朝聖者完成321公里旅程、抵達終點並獲頒「完證」（Compostela）證書的至高榮耀。", 
       svg: `<svg viewBox="0 0 100 100" width="100%" height="100%">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#E5A93C" stroke-width="3"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#E5A93C" stroke-width="1.5" stroke-dasharray="6,2"/>
@@ -1220,6 +1469,23 @@
   let activeShells = [];
   let gameLoopInterval = null;
   let lastSpawnedSecond = -1;
+  let editingRecordId = null;
+  let pendingPhotoData = null;
+
+  // 各站點約略經緯度（用於天氣顯示，僅供參考）
+  const stationCoords = {
+    "Oviedo": [43.3603, -5.8448], "Grado": [43.3853, -6.0730], "Salas": [43.3903, -6.2534],
+    "Tineo": [43.3383, -6.4212], "Borres": [43.3010, -6.6050], "La Mesa": [43.2450, -6.7600],
+    "Grandas de Salime": [43.2277, -6.8788], "A Fonsagrada": [43.1281, -7.0648],
+    "O Cadavo Baleira": [43.1167, -7.2833], "Lugo": [43.0097, -7.5567], "Ferreira": [42.9600, -7.6200],
+    "Melide": [42.9145, -8.0139], "O Pedrouzo": [42.9058, -8.3548], "Santiago": [42.8805, -8.5457]
+  };
+
+  const weatherIcons = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌦️',
+    61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'🌨️',80:'🌦️',81:'🌧️',82:'⛈️',
+    95:'⛈️',96:'⛈️',99:'⛈️'
+  };
 
   const walkerGroup = document.getElementById('walkerGroup');
 
@@ -1255,6 +1521,52 @@
     updateProgressUI();
     renderCredencial();
     drawWalker('REST', 0);
+    fetchWeather();
+    const largeStampEl = document.getElementById('stampLargeSvgContainer');
+    if (largeStampEl) {
+      largeStampEl.ondblclick = () => downloadStampImage(currentStampKey);
+    }
+  }
+
+  // ===================== 郵戳去背下載 =====================
+  let currentStampKey = null;
+
+  function downloadStampImage(stKey) {
+    const stamp = stationStamps[stKey];
+    if (!stamp) return;
+    playSoundAction();
+    const size = 800;
+    // 確保匯出時 SVG 有明確的像素尺寸（避免 100% 在獨立圖片情境下失效）
+    const exportSvg = stamp.svg
+      .replace('width="100%"', `width="${size}"`)
+      .replace('height="100%"', `height="${size}"`);
+    const svgBlob = new Blob([exportSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, size, size); // 保持透明背景（去背）
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(svgUrl);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${stKey.replace(/\s+/g, '_')}-郵戳.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(dlUrl), 5000);
+      }, 'image/png');
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+    };
+    img.src = svgUrl;
   }
 
   function openModal(id) {
@@ -1293,11 +1605,16 @@
       `;
       if (isUnlocked) {
         card.onclick = () => {
+          currentStampKey = stKey;
           playSoundAction();
           document.getElementById('stampModalTitle').innerText = stamp.name;
           document.getElementById('stampLargeSvgContainer').innerHTML = stamp.svg;
           document.getElementById('stampModalDesc').innerText = stamp.desc;
           openModal('stampDetailModal');
+        };
+        card.ondblclick = (e) => {
+          e.preventDefault();
+          downloadStampImage(stKey);
         };
       }
       grid.appendChild(card);
@@ -1416,6 +1733,8 @@
       }
       endDropdown.appendChild(endItem);
     });
+
+    fetchWeather();
   }
 
   function updatePickerUI() {
@@ -1654,7 +1973,9 @@
       endTime: `${String(endTime.getHours()).padStart(2,'0')}:${String(endTime.getMinutes()).padStart(2,'0')}`,
       duration: endTime - startTime,
       rest: totalPauseTime,
-      shells: currentScore
+      shells: currentScore,
+      note: '',
+      photo: null
     });
 
     localStorage.setItem('camino_records', JSON.stringify(records));
@@ -1696,6 +2017,7 @@
       const shellDisplay = (r.shells !== undefined && r.shells > 0) 
         ? `<span style="color: var(--btn-rest-bg); font-weight: 800; font-size: 11px; margin-left: 6px;">🐚 獲得 ${r.shells} 個</span>` 
         : '';
+      const noteFlag = (r.note || r.photo) ? `<span class="record-note-flag">${r.photo ? '📷' : '📝'}</span>` : '';
       const card = document.createElement('div');
       card.className = 'record-card';
       card.dataset.idx = idx;
@@ -1703,7 +2025,7 @@
         <div class="record-left">
           <input type="checkbox" class="del-chk" value="${r.id}" onchange="updateBatchDeleteBtn()">
           <div class="record-info">
-            <div class="record-title">${r.route} ${shellDisplay}</div>
+            <div class="record-title">${r.route} ${shellDisplay}${noteFlag}</div>
             <div class="record-sub">${r.startDate} | 結束於 ${r.endTime}</div>
           </div>
         </div>
@@ -1711,6 +2033,7 @@
           <div style="color:var(--btn-start-bg); font-weight:900; font-size:12px;">${fmtMS(r.duration)}</div>
           <div class="record-sub">休息 ${fmtMS(r.rest)}</div>
         </div>
+        <button class="record-edit-btn" onclick="event.stopPropagation(); openEditRecord(${r.id})">✏️</button>
       `;
       enableDrag(card);
       list.appendChild(card);
@@ -1763,6 +2086,269 @@
         renderRecords();
       }
     });
+  }
+
+  // ===================== 統計總覽 =====================
+  function calcStats() {
+    const totalDays = records.length;
+    let totalKm = 0, totalWalk = 0, totalRest = 0, totalShells = 0;
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2 && stationDistances[parts[1]] !== undefined && stationDistances[parts[0]] !== undefined) {
+        totalKm += Math.abs(stationDistances[parts[1]] - stationDistances[parts[0]]);
+      } else {
+        totalKm += 15;
+      }
+      totalWalk += (r.duration || 0);
+      totalRest += (r.rest || 0);
+      totalShells += (r.shells || 0);
+    });
+    const avgPaceMinPerKm = totalKm > 0 ? (totalWalk / 60000) / totalKm : 0;
+    return { totalDays, totalKm, totalWalk, totalRest, totalShells, avgPaceMinPerKm };
+  }
+
+  function fmtHM(ms) {
+    const totalMin = Math.round(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return h > 0 ? `${h}小時${m}分` : `${m}分鐘`;
+  }
+
+  function openStatsModal() {
+    const s = calcStats();
+    const grid = document.getElementById('statsGrid');
+    const paceStr = s.avgPaceMinPerKm > 0 ? `${s.avgPaceMinPerKm.toFixed(1)} 分/公里` : '--';
+    grid.innerHTML = `
+      <div class="stat-box"><div class="stat-value">${s.totalDays}</div><div class="stat-label">總行走天數</div></div>
+      <div class="stat-box"><div class="stat-value">${s.totalKm.toFixed(1)}</div><div class="stat-label">總公里數</div></div>
+      <div class="stat-box"><div class="stat-value">${fmtHM(s.totalWalk)}</div><div class="stat-label">總行走時間</div></div>
+      <div class="stat-box"><div class="stat-value">${fmtHM(s.totalRest)}</div><div class="stat-label">總休息時間</div></div>
+      <div class="stat-box"><div class="stat-value">${paceStr}</div><div class="stat-label">平均配速</div></div>
+      <div class="stat-box"><div class="stat-value">🐚 ${s.totalShells}</div><div class="stat-label">貝殼收集總數</div></div>
+    `;
+    openModal('statsModal');
+  }
+
+  // ===================== 天氣（Open-Meteo，免金鑰） =====================
+  function fetchWeather() {
+    const badge = document.getElementById('weatherBadge');
+    const targetStation = selectedEnd || selectedStart;
+    const coords = stationCoords[targetStation];
+    if (!coords || !navigator.onLine) { badge.style.display = 'none'; return; }
+    const [lat, lon] = coords;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`)
+      .then(res => res.json())
+      .then(data => {
+        const cur = data && data.current;
+        if (!cur) { badge.style.display = 'none'; return; }
+        const icon = weatherIcons[cur.weather_code] || '🌤️';
+        document.getElementById('weatherIcon').innerText = icon;
+        document.getElementById('weatherText').innerText = `${targetStation} 目前約 ${Math.round(cur.temperature_2m)}°C`;
+        badge.style.display = 'flex';
+      })
+      .catch(() => { badge.style.display = 'none'; });
+  }
+
+  // ===================== 編輯紀錄 =====================
+  function openEditRecord(id) {
+    const r = records.find(rec => rec.id === id);
+    if (!r) return;
+    playSoundAction();
+    editingRecordId = id;
+    pendingPhotoData = r.photo || null;
+
+    const parts = r.route.split(' ➔ ');
+    const startSel = document.getElementById('editStartSelect');
+    const endSel = document.getElementById('editEndSelect');
+    startSel.innerHTML = stations.map(st => `<option value="${st}" ${st===parts[0]?'selected':''}>${st}</option>`).join('');
+    endSel.innerHTML = stations.map(st => `<option value="${st}" ${st===parts[1]?'selected':''}>${st}</option>`).join('');
+
+    const dur = r.duration || 0;
+    document.getElementById('editHrs').value = Math.floor(dur / 3600000);
+    document.getElementById('editMins').value = Math.floor(dur / 60000) % 60;
+    document.getElementById('editSecs').value = Math.floor(dur / 1000) % 60;
+
+    const rest = r.rest || 0;
+    document.getElementById('editRestHrs').value = Math.floor(rest / 3600000);
+    document.getElementById('editRestMins').value = Math.floor(rest / 60000) % 60;
+    document.getElementById('editRestSecs').value = Math.floor(rest / 1000) % 60;
+
+    document.getElementById('editNote').value = r.note || '';
+
+    const preview = document.getElementById('editPhotoPreview');
+    const removeBtn = document.getElementById('editPhotoRemoveBtn');
+    if (r.photo) {
+      preview.src = r.photo;
+      preview.classList.add('show');
+      removeBtn.classList.add('show');
+    } else {
+      preview.classList.remove('show');
+      removeBtn.classList.remove('show');
+    }
+    document.getElementById('editPhotoInput').value = '';
+
+    openModal('editRecordModal');
+  }
+
+  function handlePhotoInput(evt) {
+    const file = evt.target.files && evt.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // 縮小圖片以節省 localStorage 空間
+        const maxW = 480;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        pendingPhotoData = dataUrl;
+        const preview = document.getElementById('editPhotoPreview');
+        preview.src = dataUrl;
+        preview.classList.add('show');
+        document.getElementById('editPhotoRemoveBtn').classList.add('show');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeEditPhoto() {
+    pendingPhotoData = null;
+    document.getElementById('editPhotoPreview').classList.remove('show');
+    document.getElementById('editPhotoRemoveBtn').classList.remove('show');
+    document.getElementById('editPhotoInput').value = '';
+  }
+
+  function saveEditRecord() {
+    const r = records.find(rec => rec.id === editingRecordId);
+    if (!r) return;
+    playSoundAction();
+
+    const newStart = document.getElementById('editStartSelect').value;
+    const newEnd = document.getElementById('editEndSelect').value;
+    r.route = `${newStart} ➔ ${newEnd}`;
+
+    const h = Number(document.getElementById('editHrs').value) || 0;
+    const m = Number(document.getElementById('editMins').value) || 0;
+    const s = Number(document.getElementById('editSecs').value) || 0;
+    r.duration = (h * 3600 + m * 60 + s) * 1000;
+
+    const rh = Number(document.getElementById('editRestHrs').value) || 0;
+    const rm = Number(document.getElementById('editRestMins').value) || 0;
+    const rs = Number(document.getElementById('editRestSecs').value) || 0;
+    r.rest = (rh * 3600 + rm * 60 + rs) * 1000;
+
+    r.note = document.getElementById('editNote').value.trim();
+    r.photo = pendingPhotoData;
+
+    localStorage.setItem('camino_records', JSON.stringify(records));
+    closeModal('editRecordModal');
+    renderPickers();
+    renderRecords();
+    updateProgressUI();
+    renderCredencial();
+  }
+
+  function deleteFromEditModal() {
+    if (editingRecordId === null) return;
+    records = records.filter(r => r.id !== editingRecordId);
+    localStorage.setItem('camino_records', JSON.stringify(records));
+    closeModal('editRecordModal');
+    renderPickers();
+    renderRecords();
+    updateProgressUI();
+    renderCredencial();
+  }
+
+  // ===================== 分享成就卡 =====================
+  function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+    const chars = text.split('');
+    let line = '';
+    let curY = y;
+    chars.forEach(ch => {
+      const testLine = line + ch;
+      if (ctx.measureText(testLine).width > maxWidth && line !== '') {
+        ctx.fillText(line, x, curY);
+        line = ch;
+        curY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    });
+    if (line) ctx.fillText(line, x, curY);
+    return curY;
+  }
+
+  function generateShareCard() {
+    playSoundAction();
+    const s = calcStats();
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    ctx.fillStyle = '#EFE7DA';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.fillRect(0, 0, W, 140);
+    ctx.fillStyle = '#DCA048';
+    ctx.font = '900 40px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CAMINO PRIMITIVO', W/2, 70);
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText('我的朝聖之路', W/2, 108);
+
+    ctx.strokeStyle = '#C4B59D';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(40, 170, W - 80, H - 320);
+
+    const stats = [
+      ['總行走天數', `${s.totalDays} 天`],
+      ['總公里數', `${s.totalKm.toFixed(1)} 公里`],
+      ['總行走時間', fmtHM(s.totalWalk)],
+      ['總休息時間', fmtHM(s.totalRest)],
+      ['平均配速', s.avgPaceMinPerKm > 0 ? `${s.avgPaceMinPerKm.toFixed(1)} 分/公里` : '--'],
+      ['貝殼收集總數', `🐚 ${s.totalShells} 個`]
+    ];
+
+    let y = 240;
+    stats.forEach(([label, val]) => {
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#6E5D54';
+      ctx.font = '800 22px Montserrat, sans-serif';
+      ctx.fillText(label, 80, y);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#8B2014';
+      ctx.font = '900 26px Montserrat, sans-serif';
+      ctx.fillText(val, W - 80, y);
+      y += 78;
+    });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#8C7B75';
+    ctx.font = '700 16px Montserrat, sans-serif';
+    ctx.fillText('Buen Camino, ultreia! ✦ ' + new Date().toLocaleDateString('zh-TW'), W/2, H - 50);
+
+    canvas.toBlob((blob) => {
+      const file = new File([blob], 'camino-achievement.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: '我的朝聖之路成就卡' }).catch(() => {});
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'camino-achievement.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+    }, 'image/png');
   }
 
   window.onload = init;
