@@ -1,5 +1,5 @@
 const CACHE_NAME = 'buencamino-v1';
-const urlsToCache = [
+const ASSETS = [
   './',
   './index.html',
   './manifest.json'
