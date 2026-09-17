@@ -10,14 +10,7 @@
     {
       "src": "https://a1.bbkz.net/forum/attachment.php?attachmentid=1380205&d=1418057558",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://a1.bbkz.net/forum/attachment.php?attachmentid=1380205&d=1418057558",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
   ]
 }
