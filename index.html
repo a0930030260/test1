@@ -18,6 +18,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- html2canvas Library for PNG Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <style>
   :root {
     --bg-cream: #EFE7DA;         
@@ -203,45 +209,97 @@
     width: 32px;
     height: 38px;
     z-index: 10;
-    transition: transform 0.15s ease-out;
   }
 
-  .pixel-walker.jump {
-    transform: translateY(-22px);
+  .map-card {
+    width: 100%;
+    background: #E2D7C5;
+    border: 2px solid #C4B59D;
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
-  .pixel-shell {
-    position: absolute;
-    bottom: 34px;
-    width: 20px;
-    height: 20px;
-    z-index: 9;
+  .map-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
   }
 
-  .game-score-board {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    background: rgba(35, 18, 11, 0.85);
-    color: var(--text-gold);
-    padding: 2px 8px;
-    border-radius: 6px;
+  .map-card-title {
     font-size: 11px;
-    font-weight: 900;
-    z-index: 15;
-    border: 1px solid var(--accent-yellow);
-    pointer-events: none;
-    white-space: nowrap;
+    font-weight: 800;
+    color: #6E5D54;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
+
+  #routeMap {
+    width: 100%;
+    height: 200px;
+    border-radius: 10px;
+    border: 1px solid #C4B59D;
+    z-index: 1;
+  }
+
+  .custom-map-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    color: white;
+    font-weight: 900;
+    font-size: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  }
+  .icon-completed { background-color: #2D5A27; border: 2px solid #FFFFFF; }
+  .icon-uncompleted { background-color: #8B2014; border: 2px solid #FFFFFF; }
+
+  .leaflet-popup-content-wrapper {
+    background: #FAF6EF;
+    border: 2px solid #723C13;
+    border-radius: 12px;
+    font-family: var(--font-ui);
+    padding: 4px;
+  }
+  .leaflet-popup-tip { background: #723C13; }
+
+  .station-popup {
+    font-size: 11px;
+    color: #2B1810;
+    line-height: 1.4;
+  }
+  .station-popup h4 {
+    font-family: var(--font-title);
+    font-size: 13px;
+    color: #8B2014;
+    margin-bottom: 4px;
+  }
+  .station-popup .status-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 800;
+    font-size: 9px;
+    margin-bottom: 4px;
+  }
+  .status-tag.done { background: #2D5A27; }
+  .status-tag.todo { background: #8B2014; }
 
   .route-picker-container {
     width: 100%;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
   }
 
   .picker-card {
+    flex: 1;
     background: #E2D7C5;
     border: 2px solid #C4B59D;
     border-radius: 14px;
@@ -255,7 +313,7 @@
 
   .picker-header {
     height: 40px;
-    padding: 0 14px;
+    padding: 0 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -264,7 +322,7 @@
   }
 
   .picker-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     color: #6E5D54;
     text-transform: uppercase;
@@ -275,20 +333,24 @@
   .picker-value-group {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    overflow: hidden;
   }
 
   .picker-value {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     color: #2B1810;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .picker-arrow {
     font-size: 10px;
     color: #723C13;
     transition: transform 0.2s ease;
+    flex-shrink: 0;
   }
 
   .picker-card.open .picker-arrow {
@@ -540,16 +602,24 @@
 
   .section-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     padding: 0 4px;
   }
 
-  .section-title {
-    font-size: 13px;
-    font-weight: 900;
-    color: var(--header-dark);
-    letter-spacing: 0.5px;
+  .btn-header-action {
+    background: var(--header-dark);
+    color: var(--text-gold);
+    border: 1px solid var(--accent-yellow);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    font-family: var(--font-ui);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     white-space: nowrap;
   }
 
@@ -567,87 +637,6 @@
     align-items: center;
     gap: 4px;
     white-space: nowrap;
-  }
-
-  .records-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .record-card {
-    width: 100%;
-    height: 52px;
-    background: #FAF6EF;
-    padding: 0 12px;
-    border-radius: 16px;
-    border-left: 5px solid var(--btn-rest-bg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-    border-top: 1px solid #EBE2D3;
-    border-right: 1px solid #EBE2D3;
-    border-bottom: 1px solid #EBE2D3;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .record-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
-    flex: 1;
-  }
-
-  .del-chk {
-    accent-color: var(--btn-start-bg);
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    cursor: pointer;
-  }
-
-  .record-info {
-    overflow: hidden;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .record-title {
-    font-weight: 900;
-    font-size: 13px;
-    color: #2B1810;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .record-sub {
-    font-size: 10px;
-    font-weight: 700;
-    color: #8C7B75;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .record-time-group {
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .empty-tip {
-    text-align: center;
-    font-size: 12px;
-    color: #8C7B75;
-    padding: 16px;
-    font-weight: 700;
-    width: 100%;
-    background: rgba(255,255,255,0.4);
-    border-radius: 12px;
   }
 
   .modal-overlay {
@@ -809,17 +798,6 @@
     word-break: break-all;
   }
 
-  .weather-badge {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 800;
-    color: #5A4A42;
-    white-space: nowrap;
-  }
-  .weather-badge .w-icon { font-size: 14px; }
-
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -862,20 +840,6 @@
   }
   .btn-share-card:active { background: var(--accent-yellow); color: var(--header-dark); }
 
-  .record-edit-btn {
-    background: none;
-    border: none;
-    font-size: 15px;
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 4px;
-    opacity: 0.7;
-  }
-  .record-note-flag {
-    font-size: 10px;
-    margin-left: 4px;
-  }
-
   .edit-field-label {
     font-size: 11px;
     font-weight: 800;
@@ -895,6 +859,17 @@
     border-radius: 10px;
     padding: 8px 10px;
     white-space: normal;
+  }
+  .edit-display-box {
+    width: 100%;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 800;
+    color: #8B2014;
+    background: #E2D7C5;
+    border: 2px solid #C4B59D;
+    border-radius: 10px;
+    padding: 8px 12px;
   }
   .edit-textarea {
     min-height: 60px;
@@ -968,7 +943,253 @@
     cursor: pointer;
     white-space: nowrap;
   }
-  #shareCanvas { display: none; }
+  #shareCanvas, #compostelaCanvas { display: none; }
+
+  .celebration-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(35, 18, 11, 0.92);
+    z-index: 999;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+  }
+  .celebration-overlay.open {
+    display: flex;
+  }
+  .celebration-box {
+    text-align: center;
+    z-index: 1001;
+    color: var(--text-gold);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .celebration-title {
+    font-family: var(--font-title);
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent-yellow);
+    text-shadow: 0 0 12px rgba(229,169,60,0.6);
+  }
+  .celebration-sub {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-cream);
+  }
+  .btn-compostela {
+    padding: 12px 24px;
+    background: var(--btn-start-bg);
+    color: var(--text-cream);
+    border: 2px solid var(--accent-yellow);
+    border-radius: 16px;
+    font-family: var(--font-ui);
+    font-weight: 900;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+
+  .photo-lightbox {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .photo-lightbox.open { display: flex; }
+  .photo-lightbox img {
+    max-width: 95vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  /* Journal Flip Book Style */
+  .journal-flip-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .journal-book-container {
+    width: 100%;
+    min-height: 380px;
+    position: relative;
+  }
+
+  .journal-page-slide {
+    width: 100%;
+    display: none;
+    animation: fadeInPage 0.35s ease-out forwards;
+  }
+
+  .journal-page-slide.active {
+    display: block;
+  }
+
+  @keyframes fadeInPage {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .journal-page-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 4px 8px;
+    background: #E2D7C5;
+    border: 1px solid #C4B59D;
+    border-radius: 12px;
+  }
+
+  .journal-nav-btn {
+    background: var(--header-dark);
+    color: var(--text-gold);
+    border: 1px solid var(--accent-yellow);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: background 0.15s;
+  }
+  .journal-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: #6E5D54;
+    border-color: #6E5D54;
+    color: #FAF6EF;
+  }
+
+  .journal-page-indicator {
+    font-size: 12px;
+    font-weight: 900;
+    color: #2B1810;
+  }
+
+  .journal-day-card {
+    background: #FAF6EF;
+    border: 2px solid #C4B59D;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .journal-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .btn-journal-action {
+    background: #E2D7C5;
+    border: 1px solid #C4B59D;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #2B1810;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-ui);
+  }
+  .btn-journal-action:active {
+    background: #C4B59D;
+  }
+  .btn-journal-action.delete {
+    color: var(--btn-start-bg);
+    border-color: var(--btn-start-bg);
+  }
+
+  .journal-day-header {
+    border-bottom: 2px dashed #8B2014;
+    padding-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .journal-day-title {
+    font-family: var(--font-title);
+    font-size: 16px;
+    font-weight: 900;
+    color: #8B2014;
+  }
+
+  .journal-day-date {
+    font-size: 12px;
+    font-weight: 800;
+    color: #6E5D54;
+  }
+
+  .journal-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    background: #E2D7C5;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #2B1810;
+  }
+
+  .journal-content-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .journal-note-box {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #2B1810;
+    white-space: pre-wrap;
+    background: #FFFDF8;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #EBE2D3;
+  }
+
+  .journal-stamp-box {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .journal-photo-box img {
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #C4B59D;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body onload="init()">
@@ -988,70 +1209,13 @@
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" id="progressBarFill"></div>
     </div>
-    <div class="weather-badge" id="weatherBadge" style="display:none;">
-      <span class="w-icon" id="weatherIcon">🌤️</span>
-      <span id="weatherText">--</span>
-    </div>
   </div>
 
-  <div class="pixel-stage" id="pixelStage">
-    <div class="game-score-board" id="scoreBoard">Score: 0</div>
-
-    <div class="parallax-layer layer-far">
-      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
-        <path d="M0,48 L35,22 L75,42 L130,12 L190,48 L240,18 L300,45 L360,15 L390,48 L425,22 L465,42 L520,12 L580,48 L630,18 L690,45 L750,15 L780,48 L780,75 L0,75 Z" fill="#CBBBAA"/>
-      </svg>
+  <div class="map-card">
+    <div class="map-card-header">
+      <span class="map-card-title">🗺️ CAMINO PRIMITIVO 地圖路線</span>
     </div>
-    <div class="parallax-layer layer-near">
-      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
-        <path d="M0,52 L45,32 L95,50 L155,28 L215,52 L275,30 L335,52 L390,52 L435,32 L485,50 L545,28 L605,52 L665,30 L725,52 L780,52 L780,75 L0,75 Z" fill="#A89685"/>
-      </svg>
-    </div>
-    <div class="parallax-layer layer-main">
-      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
-        <defs>
-          <g id="camino-milestone">
-            <rect x="0" y="4" width="10" height="15" rx="1.5" fill="#8C7D6B"/>
-            <rect x="1" y="2" width="8" height="2" fill="#B0A290"/>
-            <rect x="1.5" y="5.5" width="7" height="12" fill="#211510"/>
-            <path d="M5,8 L2,15 M5,8 L3.5,15 M5,8 L5,15 M5,8 L6.5,15 M5,8 L8,15" stroke="#E5A93C" stroke-width="0.8" stroke-linecap="round"/>
-            <path d="M2,6.5 L8,6.5 L5,4 Z" fill="#E5A93C"/>
-          </g>
-          <g id="church-style-a">
-            <rect x="0" y="22" width="30" height="28" fill="#6E5147"/>
-            <rect x="10" y="10" width="10" height="40" fill="#593F36"/>
-            <path d="M10,10 L15,2 L20,10 Z" fill="#8B2014"/>
-            <path d="M11,50 A4,4 0 0 1 19,50 Z" fill="#23120B"/>
-            <rect x="14" y="-3" width="2" height="5" fill="#E5A93C"/>
-            <rect x="12" y="-1" width="6" height="2" fill="#E5A93C"/>
-          </g>
-          <g id="church-style-b">
-            <rect x="4" y="24" width="28" height="26" fill="#7A5E53"/>
-            <rect x="0" y="14" width="8" height="36" fill="#664D43"/>
-            <rect x="28" y="14" width="8" height="36" fill="#664D43"/>
-            <path d="M0,14 L4,6 L8,14 Z" fill="#72291E"/>
-            <path d="M28,14 L32,6 L36,14 Z" fill="#72291E"/>
-            <path d="M14,50 A4,4 0 0 1 22,50 Z" fill="#23120B"/>
-          </g>
-        </defs>
-        <use href="#camino-milestone" x="45" y="43"/>
-        <use href="#church-style-a" x="120" y="12"/>
-        <circle cx="205" cy="42" r="12" fill="#2D5A27"/><rect x="203" y="52" width="4" height="10" fill="#3D251A"/>
-        <use href="#camino-milestone" x="275" y="43"/>
-        <use href="#church-style-b" x="330" y="12"/>
-        <circle cx="410" cy="42" r="11" fill="#386B31"/><rect x="408" y="51" width="4" height="10" fill="#3D251A"/>
-        <use href="#camino-milestone" x="435" y="43"/>
-        <use href="#church-style-a" x="510" y="12"/>
-        <circle cx="595" cy="42" r="12" fill="#2D5A27"/><rect x="593" y="52" width="4" height="10" fill="#3D251A"/>
-        <use href="#camino-milestone" x="665" y="43"/>
-        <use href="#church-style-b" x="720" y="12"/>
-        <rect x="0" y="62" width="780" height="13" fill="#2B1810"/>
-      </svg>
-    </div>
-
-    <svg id="walkerSvg" class="pixel-walker" viewBox="0 0 32 38">
-      <g id="walkerGroup"></g>
-    </svg>
+    <div id="routeMap"></div>
   </div>
 
   <div class="route-picker-container">
@@ -1117,12 +1281,85 @@
     <button id="btnStop" class="btn btn-stop" onclick="stopTimer()" disabled>完成紀錄</button>
   </div>
 
+  <div class="pixel-stage" id="pixelStage">
+    <div class="parallax-layer layer-far">
+      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
+        <path d="M0,48 L35,22 L75,42 L130,12 L190,48 L240,18 L300,45 L360,15 L390,48 L425,22 L465,42 L520,12 L580,48 L630,18 L690,45 L750,15 L780,48 L780,75 L0,75 Z" fill="#CBBBAA"/>
+      </svg>
+    </div>
+    <div class="parallax-layer layer-near">
+      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
+        <path d="M0,52 L45,32 L95,50 L155,28 L215,52 L275,30 L335,52 L390,52 L435,32 L485,50 L545,28 L605,52 L665,30 L725,52 L780,52 L780,75 L0,75 Z" fill="#A89685"/>
+      </svg>
+    </div>
+    <div class="parallax-layer layer-main">
+      <svg width="780" height="75" viewBox="0 0 780 75" preserveAspectRatio="none">
+        <defs>
+          <g id="camino-milestone">
+            <rect x="0" y="4" width="10" height="15" rx="1.5" fill="#8C7D6B"/>
+            <rect x="1" y="2" width="8" height="2" fill="#B0A290"/>
+            <rect x="1.5" y="5.5" width="7" height="12" fill="#211510"/>
+            <path d="M5,8 L2,15 M5,8 L3.5,15 M5,8 L5,15 M5,8 L6.5,15 M5,8 L8,15" stroke="#E5A93C" stroke-width="0.8" stroke-linecap="round"/>
+            <path d="M2,6.5 L8,6.5 L5,4 Z" fill="#E5A93C"/>
+          </g>
+          <g id="church-style-a">
+            <rect x="0" y="22" width="30" height="28" fill="#6E5147"/>
+            <rect x="10" y="10" width="10" height="40" fill="#593F36"/>
+            <path d="M10,10 L15,2 L20,10 Z" fill="#8B2014"/>
+            <path d="M11,50 A4,4 0 0 1 19,50 Z" fill="#23120B"/>
+            <rect x="14" y="-3" width="2" height="5" fill="#E5A93C"/>
+            <rect x="12" y="-1" width="6" height="2" fill="#E5A93C"/>
+          </g>
+          <g id="church-style-b">
+            <rect x="4" y="24" width="28" height="26" fill="#7A5E53"/>
+            <rect x="0" y="14" width="8" height="36" fill="#664D43"/>
+            <rect x="28" y="14" width="8" height="36" fill="#664D43"/>
+            <path d="M0,14 L4,6 L8,14 Z" fill="#72291E"/>
+            <path d="M28,14 L32,6 L36,14 Z" fill="#72291E"/>
+            <path d="M14,50 A4,4 0 0 1 22,50 Z" fill="#23120B"/>
+          </g>
+        </defs>
+        <use href="#camino-milestone" x="45" y="43"/>
+        <use href="#church-style-a" x="120" y="12"/>
+        <circle cx="205" cy="42" r="12" fill="#2D5A27"/><rect x="203" y="52" width="4" height="10" fill="#3D251A"/>
+        <use href="#camino-milestone" x="275" y="43"/>
+        <use href="#church-style-b" x="330" y="12"/>
+        <circle cx="410" cy="42" r="11" fill="#386B31"/><rect x="408" y="51" width="4" height="10" fill="#3D251A"/>
+        <use href="#camino-milestone" x="435" y="43"/>
+        <use href="#church-style-a" x="510" y="12"/>
+        <circle cx="595" cy="42" r="12" fill="#2D5A27"/><rect x="593" y="52" width="4" height="10" fill="#3D251A"/>
+        <use href="#camino-milestone" x="665" y="43"/>
+        <use href="#church-style-b" x="720" y="12"/>
+        <rect x="0" y="62" width="780" height="13" fill="#2B1810"/>
+      </svg>
+    </div>
+
+    <svg id="walkerSvg" class="pixel-walker" viewBox="0 0 32 38">
+      <g id="walkerGroup"></g>
+    </svg>
+  </div>
+
   <div class="history-section">
     <div class="section-header">
-      <span class="section-title">行走紀錄</span>
+      <button class="btn-header-action" onclick="openModal('journalModal')" style="font-size: 13px; padding: 6px 14px;">📖 開啟旅行手記 (Journal)</button>
       <button id="btnDeleteBatch" class="btn-delete-batch" onclick="deleteSelected()">刪除選取項目</button>
     </div>
-    <div id="recordsList" class="records-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="journalModal">
+  <div class="modal-content" style="max-width: 370px;">
+    <div class="modal-header">
+      <span>📖 電子旅行手記 (Journal)</span>
+      <button class="modal-close" onclick="closeModal('journalModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size: 11px; color: #6E5D54; text-align: center; font-weight: 800; margin-bottom: 4px;">
+        按日期整理的照片、筆記、路段與對應郵戳
+      </div>
+      <div id="journalContainer"></div>
+      <button class="btn-share-card" onclick="downloadJournalPNG()">🖼️ 下載手記內容 (PNG)</button>
+    </div>
   </div>
 </div>
 
@@ -1163,18 +1400,26 @@
     <div class="modal-body">
       <div>
         <div class="edit-field-label">起點</div>
-        <select class="edit-select" id="editStartSelect"></select>
+        <select class="edit-select" id="editStartSelect" onchange="recalcEditStats()"></select>
       </div>
       <div>
         <div class="edit-field-label">終點</div>
-        <select class="edit-select" id="editEndSelect"></select>
+        <select class="edit-select" id="editEndSelect" onchange="recalcEditStats()"></select>
+      </div>
+      <div>
+        <div class="edit-field-label">海拔爬升 (m)</div>
+        <div class="edit-display-box" id="editAscentDisplay">-- m</div>
+      </div>
+      <div>
+        <div class="edit-field-label">平均步速 (min/km)</div>
+        <div class="edit-display-box" id="editPaceDisplay">-- min/km</div>
       </div>
       <div>
         <div class="edit-field-label">行走時間 (時 / 分 / 秒)</div>
         <div class="edit-time-row">
-          <input type="number" min="0" id="editHrs" inputmode="numeric">
-          <input type="number" min="0" max="59" id="editMins" inputmode="numeric">
-          <input type="number" min="0" max="59" id="editSecs" inputmode="numeric">
+          <input type="number" min="0" id="editHrs" inputmode="numeric" oninput="recalcEditStats()">
+          <input type="number" min="0" max="59" id="editMins" inputmode="numeric" oninput="recalcEditStats()">
+          <input type="number" min="0" max="59" id="editSecs" inputmode="numeric" oninput="recalcEditStats()">
         </div>
       </div>
       <div>
@@ -1190,7 +1435,7 @@
         <textarea class="edit-textarea" id="editNote" placeholder="今天的風景、感受、遇到的人..."></textarea>
       </div>
       <div>
-        <div class="edit-field-label">照片</div>
+        <div class="edit-field-label">照片 (自動進行最高 800px 品質 0.7 壓縮)</div>
         <img class="edit-photo-preview" id="editPhotoPreview">
         <input type="file" accept="image/*" id="editPhotoInput" onchange="handlePhotoInput(event)" style="margin-top:6px;">
         <button class="btn-photo-remove" id="editPhotoRemoveBtn" onclick="removeEditPhoto()">移除照片</button>
@@ -1203,8 +1448,6 @@
   </div>
 </div>
 
-<canvas id="shareCanvas" width="800" height="1000"></canvas>
-
 <div class="modal-overlay" id="stampDetailModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -1213,11 +1456,31 @@
     </div>
     <div class="modal-body stamp-detail-box">
       <div class="stamp-large-circle" id="stampLargeSvgContainer"></div>
-      <button class="btn-download-stamp" onclick="downloadCurrentStamp()">💾 下載郵戳</button>
+      <button class="btn-download-stamp" onclick="downloadCurrentStampPNG()">🖼️ 下載郵戳 (PNG)</button>
       <div id="stampModalDesc"></div>
     </div>
   </div>
 </div>
+
+<div class="celebration-overlay" id="celebrationOverlay">
+  <div class="celebration-box">
+    <div style="font-size: 50px;">🐚✨</div>
+    <div class="celebration-title">¡ENHORABUENA!</div>
+    <div class="celebration-sub">恭喜您順利完成 321 公里 Camino Primitivo 朝聖之旅！</div>
+    <button class="btn-compostela" onclick="downloadCompostela()">📜 下載拉丁文風格完證證書</button>
+    <button class="header-btn" style="margin-top: 10px;" onclick="closeCelebration()">關閉慶祝畫面</button>
+  </div>
+</div>
+
+<div class="photo-lightbox" id="photoLightbox" onclick="closePhotoLightbox()">
+  <img id="lightboxImg" src="" alt="Photo Preview">
+</div>
+
+<canvas id="shareCanvas" width="800" height="1000"></canvas>
+<canvas id="compostelaCanvas" width="1000" height="1400"></canvas>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
   let audioCtx = null;
@@ -1251,30 +1514,6 @@
     osc.stop(now + 0.08);
   }
 
-  function playSoundStep() {
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    const bufferSize = audioCtx.sampleRate * 0.04;
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = buffer;
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(350 + Math.random() * 100, now);
-    filter.Q.setValueAtTime(1.8, now);
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.08, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination);
-    noise.start(now);
-  }
-
   function playSoundTick() {
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
@@ -1296,6 +1535,29 @@
     "La Mesa": 115.0, "Grandas de Salime": 148.0, "A Fonsagrada": 182.0,
     "O Cadavo Baleira": 207.0, "Lugo": 233.0, "Ferreira": 260.0,
     "Melide": 285.0, "O Pedrouzo": 305.0, "Santiago": 321.0
+  };
+
+  const stationElevations = {
+    "Oviedo": 230, "Grado": 65, "Salas": 190, "Tineo": 652, "Borres": 630,
+    "La Mesa": 870, "Grandas de Salime": 562, "A Fonsagrada": 950,
+    "O Cadavo Baleira": 710, "Lugo": 465, "Ferreira": 470,
+    "Melide": 454, "O Pedrouzo": 290, "Santiago": 260
+  };
+
+  const segmentAscents = {
+    "Oviedo ➔ Grado": 620,
+    "Grado ➔ Salas": 580,
+    "Salas ➔ Tineo": 840,
+    "Tineo ➔ Borres": 350,
+    "Borres ➔ La Mesa": 1100,
+    "La Mesa ➔ Grandas de Salime": 320,
+    "Grandas de Salime ➔ A Fonsagrada": 1150,
+    "A Fonsagrada ➔ O Cadavo Baleira": 680,
+    "O Cadavo Baleira ➔ Lugo": 420,
+    "Lugo ➔ Ferreira": 380,
+    "Ferreira ➔ Melide": 410,
+    "Melide ➔ O Pedrouzo": 450,
+    "O Pedrouzo ➔ Santiago": 360
   };
 
   const stations = Object.keys(stationDistances);
@@ -1493,15 +1755,13 @@
     records = Array.isArray(raw) ? raw.filter(r => r && r.route && r.startDate && typeof r.duration === 'number') : [];
   } catch (e) { records = []; }
 
+  let currentJournalPageIndex = 0;
+  let currentStampKey = "";
   let selectedStart = "", selectedEnd = "";
   let isTiming = false, isResting = false;
   let startTime = null, totalPauseTime = 0, restStartTime = null;
   let timerInterval = null, prevStr = "000000";
   let spriteFrame = 0, spriteInterval = null;
-  let currentScore = 0;
-  let activeShells = [];
-  let gameLoopInterval = null;
-  let lastSpawnedSecond = -1;
   let editingRecordId = null;
   let pendingPhotoData = null;
 
@@ -1520,739 +1780,477 @@
   };
 
   const walkerGroup = document.getElementById('walkerGroup');
+  let mapInstance = null;
+  let mapMarkers = [];
+  let mapPolyline = null;
+  let stationWeatherData = {};
 
-  function drawWalker(state, frame) {
-    const skinColor = "#E0B392";
-    const hairColor = "#2B1810";
-    if (state === 'REST') {
-      walkerGroup.innerHTML = `
-        <ellipse cx="16" cy="35.5" rx="11" ry="2.2" fill="#5A4A42" opacity="0.45"/>
-        <rect x="4" y="19" width="8" height="11" fill="#3D251A" rx="1"/>
-        <rect x="12" y="17" width="9" height="9" rx="1.5" fill="#8B2014"/>
-        <rect x="19" y="18.5" width="4.5" height="3.5" rx="1" fill="${skinColor}"/>
-        <rect x="9" y="25" width="15" height="5" rx="2" fill="#150A05"/>
-        <rect x="9" y="29.5" width="4.5" height="5" rx="1" fill="#150A05"/>
-        <rect x="19.5" y="29.5" width="4.5" height="5" rx="1" fill="#23120B"/>
-        <circle cx="16" cy="13" r="4.5" fill="${skinColor}"/>
-        <path d="M11.5,12.5 C11.5,8 20.5,8 20.5,12.5 C19.5,9 12.5,9 11.5,12.5 Z" fill="${hairColor}"/>
-      `;
-    } else {
-      const legOffset = (frame % 2 === 0) ? 3 : -3;
-      walkerGroup.innerHTML = `
-        <rect x="${20 + legOffset}" y="11" width="2" height="23" fill="#3D251A"/>
-        <rect x="3" y="11" width="8" height="15" fill="#3D251A" rx="1"/>
-        <circle cx="14" cy="9" r="4.5" fill="${skinColor}"/>
-        <path d="M9.5,8.5 C9.5,4 18.5,4 18.5,8.5 C17.5,5 10.5,5 9.5,8.5 Z" fill="${hairColor}"/>
-        <rect x="10" y="13" width="8" height="12" fill="#8B2014"/>
-        <rect x="14" y="15" width="5" height="3" fill="${skinColor}"/>
-        <rect x="${10 + legOffset}" y="25" width="3.5" height="10" fill="#150A05"/>
-        <rect x="${15 - legOffset}" y="25" width="3.5" height="10" fill="#23120B"/>
-      `;
+  function calculateAscent(sStart, sEnd) {
+    const iStart = stations.indexOf(sStart);
+    const iEnd = stations.indexOf(sEnd);
+    if (iStart === -1 || iEnd === -1 || iStart >= iEnd) return 0;
+
+    let totalAscent = 0;
+    for (let i = iStart; i < iEnd; i++) {
+      const key = `${stations[i]} ➔ ${stations[i+1]}`;
+      if (segmentAscents[key] !== undefined) {
+        totalAscent += segmentAscents[key];
+      } else {
+        const diff = (stationElevations[stations[i+1]] || 0) - (stationElevations[stations[i]] || 0);
+        if (diff > 0) totalAscent += diff;
+      }
+    }
+    return totalAscent;
+  }
+
+  function calculatePace(durationSec, distanceKm) {
+    if (!distanceKm || distanceKm <= 0 || !durationSec || durationSec <= 0) return "-- min/km";
+    const paceDecimal = (durationSec / 60) / distanceKm;
+    const paceMins = Math.floor(paceDecimal);
+    const paceSecs = Math.round((paceDecimal - paceMins) * 60);
+    const finalSecs = paceSecs === 60 ? 0 : paceSecs;
+    const finalMins = paceSecs === 60 ? paceMins + 1 : paceMins;
+    return `${finalMins}'${String(finalSecs).padStart(2, '0')}" /km`;
+  }
+
+  function getCompletedStationsSet() {
+    const completed = new Set();
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        const i1 = stations.indexOf(parts[0]);
+        const i2 = stations.indexOf(parts[1]);
+        if (i1 !== -1 && i2 !== -1) {
+          const min = Math.min(i1, i2);
+          const max = Math.max(i1, i2);
+          for (let i = min; i <= max; i++) {
+            completed.add(stations[i]);
+          }
+        }
+      }
+    });
+    return completed;
+  }
+
+  async function fetchAllStationsWeather() {
+    const lats = stations.map(s => stationCoords[s][0]).join(',');
+    const lons = stations.map(s => stationCoords[s][1]).join(',');
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current_weather=true`);
+      const data = await res.json();
+      const dataArr = Array.isArray(data) ? data : [data];
+      stations.forEach((s, i) => {
+        if (dataArr[i] && dataArr[i].current_weather) {
+          const cw = dataArr[i].current_weather;
+          stationWeatherData[s] = {
+            temp: Math.round(cw.temperature),
+            icon: weatherIcons[cw.weathercode] || '🌤️'
+          };
+        }
+      });
+    } catch (e) {
+      console.warn('天氣數據讀取失敗', e);
     }
   }
 
-  function fetchWeather() {
-    if (!selectedStart || !stationCoords[selectedStart]) return;
-    const [lat, lon] = stationCoords[selectedStart];
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.current_weather) {
-          const code = data.current_weather.weathercode;
-          const temp = Math.round(data.current_weather.temperature);
-          const icon = weatherIcons[code] || '🌤️';
-          document.getElementById('weatherIcon').innerText = icon;
-          document.getElementById('weatherText').innerText = `${selectedStart} ${temp}°C`;
-          document.getElementById('weatherBadge').style.display = 'flex';
-        }
-      })
-      .catch(() => {});
+  function initMap() {
+    if (mapInstance) return;
+
+    mapInstance = L.map('routeMap', {
+      zoomControl: false,
+      attributionControl: false
+    }).setView([43.15, -7.1], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18
+    }).addTo(mapInstance);
+
+    const latLngs = stations.map(s => stationCoords[s]);
+    mapPolyline = L.polyline(latLngs, {
+      color: '#8B2014',
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '6, 6'
+    }).addTo(mapInstance);
+
+    mapInstance.fitBounds(mapPolyline.getBounds(), { padding: [15, 15] });
+
+    updateMapMarkers();
+  }
+
+  function updateMapMarkers() {
+    if (!mapInstance) return;
+
+    mapMarkers.forEach(m => mapInstance.removeLayer(m));
+    mapMarkers = [];
+
+    const completedSet = getCompletedStationsSet();
+
+    stations.forEach((stName, idx) => {
+      const isDone = completedSet.has(stName);
+      const iconClass = isDone ? 'icon-completed' : 'icon-uncompleted';
+      
+      const customIcon = L.divIcon({
+        className: `custom-map-icon ${iconClass}`,
+        html: `<span>${idx + 1}</span>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+
+      const weather = stationWeatherData[stName];
+      const weatherText = weather ? `${weather.icon} ${weather.temp}°C` : '載入中...';
+      const statusHtml = isDone 
+        ? `<span class="status-tag done">✓ 已完成</span>` 
+        : `<span class="status-tag todo">未完成</span>`;
+
+      const popupContent = `
+        <div class="station-popup">
+          <h4>${stName}</h4>
+          <div>${statusHtml}</div>
+          <div>📍 累計距離：${stationDistances[stName]} km</div>
+          <div>🌤️ 目前天氣：${weatherText}</div>
+        </div>
+      `;
+
+      const marker = L.marker(stationCoords[stName], { icon: customIcon })
+        .bindPopup(popupContent)
+        .addTo(mapInstance);
+
+      mapMarkers.push(marker);
+    });
+  }
+
+  function renderJournal() {
+    const container = document.getElementById('journalContainer');
+    container.innerHTML = '';
+
+    if (records.length === 0) {
+      container.innerHTML = '<div style="text-align:center; color:#8C7B75; padding:20px; font-weight:800;">尚無行走紀錄，完成路線後即可在此檢視電子手記。</div>';
+      return;
+    }
+
+    const sorted = [...records].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    const totalPages = sorted.length;
+    if (currentJournalPageIndex < 0) currentJournalPageIndex = 0;
+    if (currentJournalPageIndex >= totalPages) currentJournalPageIndex = totalPages - 1;
+
+    let bookPagesHtml = `<div class="journal-flip-wrapper"><div class="journal-book-container">`;
+
+    sorted.forEach((r, idx) => {
+      const parts = r.route.split(' ➔ ');
+      const endStation = parts[1] || parts[0];
+      const stamp = stationStamps[endStation] || stationStamps["Santiago"];
+      const dist = (stationDistances[parts[1]] !== undefined && stationDistances[parts[0]] !== undefined)
+        ? Math.abs(stationDistances[parts[1]] - stationDistances[parts[0]]) : 0;
+      const ascent = calculateAscent(parts[0], parts[1]);
+      const pace = calculatePace(r.duration, dist);
+      const formattedDate = new Date(r.startDate).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+      const cardHtml = `
+        <div class="journal-day-card" id="journalCard-${r.id}">
+          <div class="journal-day-header">
+            <span class="journal-day-title">Day ${idx + 1} · ${r.route}</span>
+            <span class="journal-day-date">📅 ${formattedDate}</span>
+          </div>
+          <div class="journal-meta-grid">
+            <div>📏 距離：${dist.toFixed(1)} km</div>
+            <div>⛰️ 爬升：${ascent} m</div>
+            <div>⏱️ 時間：${formatDuration(r.duration)}</div>
+            <div>⚡ 步速：${pace}</div>
+          </div>
+          <div class="journal-content-row">
+            <div class="journal-note-box">${r.note || '這一天沒有留下文字筆記...'}</div>
+            <div class="journal-stamp-box" style="cursor:pointer;" onclick="openStampDetail('${endStation}')">${stamp ? stamp.svg : ''}</div>
+          </div>
+          ${r.photo ? `<div class="journal-photo-box"><img src="${r.photo}" onclick="openPhotoLightbox('${r.photo}', event)"></div>` : ''}
+          <div class="journal-card-actions">
+            <button class="btn-journal-action" onclick="openEditRecordModal(${r.id})">✏️ 編輯</button>
+            <button class="btn-journal-action delete" onclick="deleteSingleRecord(${r.id})">🗑️ 刪除</button>
+          </div>
+        </div>
+      `;
+
+      bookPagesHtml += `
+        <div class="journal-page-slide ${idx === currentJournalPageIndex ? 'active' : ''}" id="journalSlide-${idx}">
+          ${cardHtml}
+        </div>
+      `;
+    });
+
+    bookPagesHtml += `</div>
+      <div class="journal-page-controls">
+        <button class="journal-nav-btn" onclick="turnJournalPage(-1)" ${currentJournalPageIndex === 0 ? 'disabled' : ''}>◄ 上頁</button>
+        <span class="journal-page-indicator">${currentJournalPageIndex + 1} / ${totalPages}</span>
+        <button class="journal-nav-btn" onclick="turnJournalPage(1)" ${currentJournalPageIndex === totalPages - 1 ? 'disabled' : ''}>下頁 ►</button>
+      </div>
+    </div>`;
+
+    container.innerHTML = bookPagesHtml;
+  }
+
+  function turnJournalPage(dir) {
+    playSoundAction();
+    const sorted = [...records].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    const newIdx = currentJournalPageIndex + dir;
+    if (newIdx >= 0 && newIdx < sorted.length) {
+      currentJournalPageIndex = newIdx;
+      renderJournal();
+    }
+  }
+
+  /* 下載當前手記卡片為 PNG 檔 */
+  function downloadJournalPNG() {
+    playSoundAction();
+    const activeSlide = document.querySelector('.journal-page-slide.active .journal-day-card');
+    if (!activeSlide) return;
+
+    // 隱藏動作按鈕避免畫入圖片
+    const actions = activeSlide.querySelector('.journal-card-actions');
+    if (actions) actions.style.display = 'none';
+
+    html2canvas(activeSlide, {
+      scale: 2,
+      backgroundColor: '#FAF6EF',
+      useCORS: true
+    }).then(canvas => {
+      if (actions) actions.style.display = 'flex';
+      const link = document.createElement('a');
+      link.download = `Camino_Journal_Day${currentJournalPageIndex + 1}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }).catch(err => {
+      if (actions) actions.style.display = 'flex';
+      console.error('手記 PNG 下載失敗', err);
+    });
+  }
+
+  /* 下載目前開啟的郵戳為 PNG 檔 */
+  function downloadCurrentStampPNG() {
+    playSoundAction();
+    const container = document.getElementById('stampLargeSvgContainer');
+    const svgElem = container.querySelector('svg');
+    if (!svgElem) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 500;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
+
+    const svgData = new XMLSerializer().serializeToString(svgElem);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+
+    img.onload = function() {
+      ctx.drawImage(img, 0, 0, 500, 500);
+      URL.revokeObjectURL(url);
+      const link = document.createElement('a');
+      link.download = `Stamp_${currentStampKey || 'Camino'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = url;
+  }
+
+  function renderWalkerFrame(frame) {
+    const isWalking = isTiming && !isResting;
+    let bodyY = 0, headY = 0, armL = "10,23 7,29", armR = "18,23 21,29", legL = "11,30 11,37", legR = "17,30 17,37";
+
+    if (isWalking) {
+      const f = frame % 4;
+      if (f === 0) { bodyY = 0; headY = 0; armL = "10,23 5,28"; armR = "18,23 23,28"; legL = "11,30 7,37"; legR = "17,30 21,37"; }
+      else if (f === 1) { bodyY = -1; headY = -1; armL = "10,22 8,28"; armR = "18,22 20,28"; legL = "11,29 11,36"; legR = "17,29 17,36"; }
+      else if (f === 2) { bodyY = 0; headY = 0; armL = "10,23 23,28"; armR = "18,23 5,28"; legL = "11,30 21,37"; legR = "17,30 7,37"; }
+      else if (f === 3) { bodyY = -1; headY = -1; armL = "10,22 20,28"; armR = "18,22 8,28"; legL = "11,29 17,36"; legR = "17,29 11,36"; }
+    }
+
+    walkerGroup.innerHTML = `
+      <ellipse cx="14" cy="37" rx="8" ry="1.5" fill="rgba(0,0,0,0.2)"/>
+      <line x1="${legL.split(' ')[0].split(',')[0]}" y1="${legL.split(' ')[0].split(',')[1]}" x2="${legL.split(' ')[1].split(',')[0]}" y2="${legL.split(' ')[1].split(',')[1]}" stroke="#2B1810" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="${legR.split(' ')[0].split(',')[0]}" y1="${legR.split(' ')[0].split(',')[1]}" x2="${legR.split(' ')[1].split(',')[0]}" y2="${legR.split(' ')[1].split(',')[1]}" stroke="#2B1810" stroke-width="2.5" stroke-linecap="round"/>
+      <rect x="9" y="${17+bodyY}" width="10" height="13" rx="2" fill="#8B2014"/>
+      <rect x="5" y="${16+bodyY}" width="6" height="12" rx="2" fill="#23120B"/>
+      <circle cx="14" cy="${11+headY}" r="5.5" fill="#DCA048"/>
+      <path d="M7,${9+headY} Q14,${4+headY} 21,${9+headY} L23,${11+headY} L5,${11+headY} Z" fill="#D48439"/>
+      <line x1="${armL.split(' ')[0].split(',')[0]}" y1="${armL.split(' ')[0].split(',')[1]}" x2="${armL.split(' ')[1].split(',')[0]}" y2="${armL.split(' ')[1].split(',')[1]}" stroke="#8B2014" stroke-width="2" stroke-linecap="round"/>
+      <line x1="${armR.split(' ')[0].split(',')[0]}" y1="${armR.split(' ')[0].split(',')[1]}" x2="${armR.split(' ')[1].split(',')[0]}" y2="${armR.split(' ')[1].split(',')[1]}" stroke="#8B2014" stroke-width="2" stroke-linecap="round"/>
+      <line x1="22" y1="${12+bodyY}" x2="24" y2="37" stroke="#7C706B" stroke-width="1.5" stroke-linecap="round"/>
+    `;
+  }
+
+  function startSpriteAnim() {
+    if (spriteInterval) clearInterval(spriteInterval);
+    document.getElementById('pixelStage').classList.add('anim-running');
+    document.getElementById('progressBarFill').classList.add('walking');
+    spriteInterval = setInterval(() => {
+      spriteFrame++;
+      renderWalkerFrame(spriteFrame);
+    }, 220);
+  }
+
+  function stopSpriteAnim() {
+    if (spriteInterval) clearInterval(spriteInterval);
+    spriteInterval = null;
+    document.getElementById('pixelStage').classList.remove('anim-running');
+    document.getElementById('progressBarFill').classList.remove('walking');
+    renderWalkerFrame(0);
   }
 
   function init() {
-    renderPickers();
-    renderRecords();
+    populatePickers();
+    renderWalkerFrame(0);
+    renderCredencialGrid();
     updateProgressUI();
-    renderCredencial();
-    drawWalker('REST', 0);
-    fetchWeather();
-  }
 
-  let currentStampKey = null;
-
-  function downloadStampPng(stampKey) {
-    const stamp = stationStamps[stampKey];
-    if (!stamp) return;
-
-    playSoundAction();
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 800;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#EFE7DA';
-    ctx.fillRect(0, 0, 800, 800);
-
-    ctx.fillStyle = '#FAF6EF';
-    ctx.beginPath();
-    ctx.roundRect(30, 30, 740, 740, 32);
-    ctx.fill();
-
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#723C13';
-    ctx.beginPath();
-    ctx.roundRect(46, 46, 708, 708, 24);
-    ctx.stroke();
-
-    const exportSvg = stamp.svg
-      .replace(/width="100%"/g, 'width="600"')
-      .replace(/height="100%"/g, 'height="600"')
-      .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ');
-
-    const svgBlob = new Blob([exportSvg], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const img = new Image();
-
-    img.onload = () => {
-      ctx.drawImage(img, 100, 80, 600, 600);
-      URL.revokeObjectURL(svgUrl);
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = '#2B1810';
-      ctx.font = '900 28px Cinzel, serif';
-      ctx.fillText(stampKey, 400, 705);
-
-      ctx.fillStyle = '#8C7B75';
-      ctx.font = '800 14px Montserrat, sans-serif';
-      ctx.fillText('CAMINO PRIMITIVO - 原始之路朝聖郵戳', 400, 735);
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-
-        const dlUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = dlUrl;
-        a.download = `${stampKey.replace(/\s+/g, '_')}_郵戳.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        setTimeout(() => URL.revokeObjectURL(dlUrl), 5000);
-      }, 'image/png');
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(svgUrl);
-      console.error(`無法將 ${stampKey} 的 SVG 轉換為 PNG。`);
-    };
-
-    img.src = svgUrl;
-  }
-
-  function downloadCurrentStamp() {
-    if (!currentStampKey) return;
-    downloadStampPng(currentStampKey);
-  }
-
-  function openModal(id) {
-    playSoundAction();
-    document.getElementById(id).classList.add('open');
-    if (id === 'credencialModal') renderCredencial();
-  }
-
-  function closeModal(id) {
-    playSoundAction();
-    document.getElementById(id).classList.remove('open');
-  }
-
-  function openStatsModal() {
-    playSoundAction();
-    const grid = document.getElementById('statsGrid');
-    grid.innerHTML = '';
-
-    let totalWalkSec = 0;
-    let totalRestSec = 0;
-    let totalKm = 0;
-
-    records.forEach(r => {
-      totalWalkSec += r.duration;
-      totalRestSec += (r.restTime || 0);
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2 && stationDistances[parts[1]] !== undefined && stationDistances[parts[0]] !== undefined) {
-        totalKm += Math.abs(stationDistances[parts[1]] - stationDistances[parts[0]]);
-      }
-    });
-
-    const totalDistance = 321.0;
-    if (totalKm > totalDistance) totalKm = totalDistance;
-    const completionRate = Math.min(100, Math.round((totalKm / totalDistance) * 100));
-
-    const wHrs = (totalWalkSec / 3600).toFixed(1);
-    const rHrs = (totalRestSec / 3600).toFixed(1);
-
-    const statItems = [
-      { label: '累積完成里程', value: `${totalKm.toFixed(1)} km` },
-      { label: '總體路線進度', value: `${completionRate}%` },
-      { label: '累積行走時間', value: `${wHrs} hr` },
-      { label: '累積休息時間', value: `${rHrs} hr` },
-      { label: '完成徒步段數', value: `${records.length} 段` },
-      { label: '獲得郵戳章數', value: `${getUnlockedCount()} 個` }
-    ];
-
-    statItems.forEach(item => {
-      const box = document.createElement('div');
-      box.className = 'stat-box';
-      box.innerHTML = `
-        <div class="stat-value">${item.value}</div>
-        <div class="stat-label">${item.label}</div>
-      `;
-      grid.appendChild(box);
-    });
-
-    openModal('statsModal');
-  }
-
-  function getUnlockedCount() {
-    const unlocked = new Set();
-    records.forEach(r => {
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2) {
-        unlocked.add(parts[0]);
-        unlocked.add(parts[1]);
-      }
-    });
-    unlocked.add("Oviedo");
-    return unlocked.size;
-  }
-
-  function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split('');
-    let line = '';
-    let currentY = y;
-    for (let n = 0; n < words.length; n++) {
-      let testLine = line + words[n];
-      let metrics = ctx.measureText(testLine);
-      let testWidth = metrics.width;
-      if (testWidth > maxWidth && n > 0) {
-        ctx.fillText(line, x, currentY);
-        line = words[n];
-        currentY += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, currentY);
-    return currentY;
-  }
-
-  function generateShareCard() {
-    playSoundAction();
-    const canvas = document.getElementById('shareCanvas');
-    canvas.width = 800;
-    canvas.height = 1000;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#2B1810';
-    ctx.fillRect(0, 0, 800, 1000);
-
-    ctx.fillStyle = '#FAF6EF';
-    ctx.beginPath();
-    ctx.roundRect(30, 30, 740, 940, 24);
-    ctx.fill();
-
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#E5A93C';
-    ctx.beginPath();
-    ctx.roundRect(45, 45, 710, 910, 18);
-    ctx.stroke();
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#DCA048';
-    ctx.font = '900 28px Cinzel, serif';
-    ctx.fillText('CAMINO PRIMITIVO', 400, 100);
-
-    ctx.fillStyle = '#2B1810';
-    ctx.font = '900 36px Montserrat, sans-serif';
-    ctx.fillText('朝聖成就紀錄卡', 400, 150);
-
-    ctx.strokeStyle = '#C4B59D';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(100, 180);
-    ctx.lineTo(700, 180);
-    ctx.stroke();
-
-    let totalWalkSec = 0;
-    let totalRestSec = 0;
-    let totalKm = 0;
-    records.forEach(r => {
-      totalWalkSec += r.duration;
-      totalRestSec += (r.restTime || 0);
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2 && stationDistances[parts[1]] !== undefined && stationDistances[parts[0]] !== undefined) {
-        totalKm += Math.abs(stationDistances[parts[1]] - stationDistances[parts[0]]);
-      }
-    });
-
-    const totalDistance = 321.0;
-    if (totalKm > totalDistance) totalKm = totalDistance;
-    const completionRate = Math.min(100, Math.round((totalKm / totalDistance) * 100));
-
-    const boxWidth = 310;
-    const boxHeight = 110;
-    const statsData = [
-      { label: '累積完成里程', val: `${totalKm.toFixed(1)} / 321 km`, x: 80, y: 210 },
-      { label: '路線總體進度', val: `${completionRate}%`, x: 410, y: 210 },
-      { label: '累積行走時間', val: `${(totalWalkSec/3600).toFixed(1)} 小時`, x: 80, y: 340 },
-      { label: '徒步完成段數', val: `${records.length} 段數`, x: 410, y: 340 }
-    ];
-
-    statsData.forEach(item => {
-      ctx.fillStyle = '#E2D7C5';
-      ctx.beginPath();
-      ctx.roundRect(item.x, item.y, boxWidth, boxHeight, 16);
-      ctx.fill();
-
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#8B2014';
-      ctx.font = '900 28px Montserrat, sans-serif';
-      ctx.fillText(item.val, item.x + boxWidth / 2, item.y + 55);
-
-      ctx.fillStyle = '#6E5D54';
-      ctx.font = '800 14px Montserrat, sans-serif';
-      ctx.fillText(item.label, item.x + boxWidth / 2, item.y + 90);
-    });
-
-    let currentY = 490;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#2B1810';
-    ctx.font = '900 20px Montserrat, sans-serif';
-    ctx.fillText('最新旅程動態：', 80, currentY);
-    currentY += 35;
-
-    const latest = records[0];
-    if (latest) {
-      ctx.fillStyle = '#FAF6EF';
-      ctx.strokeStyle = '#C4B59D';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(80, currentY, 640, 190, 16);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#8B2014';
-      ctx.font = '900 20px Montserrat, sans-serif';
-      ctx.fillText(`📍 ${latest.route}`, 110, currentY + 40);
-
-      const hrs = Math.floor(latest.duration / 3600);
-      const mins = Math.floor((latest.duration % 3600) / 60);
-      const secs = latest.duration % 60;
-      const tStr = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-
-      ctx.fillStyle = '#2B1810';
-      ctx.font = '800 16px Montserrat, sans-serif';
-      ctx.fillText(`⏱️ 行走時間: ${tStr}  |  休息: ${Math.floor(latest.restTime/60)} 分鐘`, 110, currentY + 75);
-
-      ctx.fillStyle = '#5A4A42';
-      ctx.font = '700 15px Montserrat, sans-serif';
-      const noteText = latest.note ? `📝 筆記: ${latest.note}` : '📝 筆記: 今日順利完成徒步！';
-      wrapCanvasText(ctx, noteText, 110, currentY + 115, 580, 24);
-
-      currentY += 210;
-    } else {
-      ctx.fillStyle = '#8C7B75';
-      ctx.font = '700 16px Montserrat, sans-serif';
-      ctx.fillText('尚未建立行走紀錄，踏出第一步啟程吧！', 110, currentY + 30);
-      currentY += 80;
-    }
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#E5A93C';
-    ctx.font = '900 22px Cinzel, serif';
-    ctx.fillText('¡BUEN CAMINO!', 400, 900);
-
-    ctx.fillStyle = '#8C7B75';
-    ctx.font = '700 13px Montserrat, sans-serif';
-    ctx.fillText('Camino Timer - 原始之路專屬計時神器', 400, 930);
-
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Camino_Achievement_Card.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }, 'image/png');
-  }
-
-  function renderCredencial() {
-    const grid = document.getElementById('credencialGrid');
-    grid.innerHTML = '';
-
-    const unlockedStations = new Set();
-    records.forEach(r => {
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2) {
-        unlockedStations.add(parts[0]);
-        unlockedStations.add(parts[1]);
-      }
-    });
-    unlockedStations.add("Oviedo");
-
-    Object.keys(stationStamps).forEach(stKey => {
-      const stamp = stationStamps[stKey];
-      const isUnlocked = unlockedStations.has(stKey);
-      const card = document.createElement('div');
-      card.className = `sello-card ${isUnlocked ? 'unlocked' : ''}`;
-      card.innerHTML = `
-        <div class="sello-img-box">${stamp.svg}</div>
-        <div class="sello-name">${stKey}</div>
-      `;
-      if (isUnlocked) {
-        card.onclick = () => {
-          currentStampKey = stKey;
-          playSoundAction();
-          document.getElementById('stampModalTitle').innerText = stamp.name;
-          document.getElementById('stampLargeSvgContainer').innerHTML = stamp.svg;
-          document.getElementById('stampModalDesc').innerText = stamp.desc;
-          openModal('stampDetailModal');
-        };
-      }
-      grid.appendChild(card);
+    fetchAllStationsWeather().then(() => {
+      initMap();
     });
   }
 
-  function getUsedStations() {
-    const usedStarts = new Set();
-    const usedEnds = new Set();
-    records.forEach(r => {
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2) {
-        usedStarts.add(parts[0]);
-        usedEnds.add(parts[1]);
+  function populatePickers() {
+    const sDrop = document.getElementById('startDropdown');
+    const eDrop = document.getElementById('endDropdown');
+    sDrop.innerHTML = '';
+    eDrop.innerHTML = '';
+
+    stations.forEach((s, idx) => {
+      if (idx < stations.length - 1) {
+        const itemS = document.createElement('div');
+        itemS.className = 'option-item' + (s === selectedStart ? ' selected' : '');
+        itemS.innerText = s;
+        itemS.onclick = () => selectStation('start', s);
+        sDrop.appendChild(itemS);
+      }
+
+      if (idx > 0) {
+        const itemE = document.createElement('div');
+        itemE.className = 'option-item';
+        itemE.innerText = s;
+        itemE.id = 'end-opt-' + idx;
+        itemE.onclick = () => selectStation('end', s);
+        eDrop.appendChild(itemE);
       }
     });
-    return { usedStarts, usedEnds };
-  }
-
-  function updateProgressUI() {
-    const totalDistance = 321.0;
-    let completedKm = 0;
-    records.forEach(r => {
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2 && stationDistances[parts[1]] !== undefined && stationDistances[parts[0]] !== undefined) {
-        completedKm += Math.abs(stationDistances[parts[1]] - stationDistances[parts[0]]);
-      } else {
-        completedKm += 15;
-      }
-    });
-    if (completedKm > totalDistance) completedKm = totalDistance;
-    const percent = Math.min(100, Math.round((completedKm / totalDistance) * 100));
-    const remainingKm = Math.max(0, (totalDistance - completedKm).toFixed(1));
-
-    document.getElementById('progressText').innerText = `距離聖地雅哥還有 ${remainingKm} 公里`;
-    document.getElementById('progressPercent').innerText = `${percent}%`;
-    document.getElementById('progressBarFill').style.width = `${percent}%`;
-
-    const btnStart = document.getElementById('btnStart');
-    if (percent >= 100) {
-      btnStart.disabled = true;
-      if (!isTiming) {
-        btnStart.innerText = '朝聖旅程已圓滿達成';
-      }
-    }
+    updateEndOptionsState();
   }
 
   function togglePicker(type) {
     if (isTiming) return;
     playSoundAction();
-    const startCard = document.getElementById('startPickerCard');
-    const endCard = document.getElementById('endPickerCard');
+    const cardS = document.getElementById('startPickerCard');
+    const cardE = document.getElementById('endPickerCard');
+
     if (type === 'start') {
-      endCard.classList.remove('open');
-      startCard.classList.toggle('open');
+      cardE.classList.remove('open');
+      cardS.classList.toggle('open');
     } else {
-      startCard.classList.remove('open');
-      endCard.classList.toggle('open');
+      cardS.classList.remove('open');
+      cardE.classList.toggle('open');
     }
   }
 
-  function renderPickers() {
-    const startDropdown = document.getElementById('startDropdown');
-    const endDropdown = document.getElementById('endDropdown');
-    startDropdown.innerHTML = '';
-    endDropdown.innerHTML = '';
+  function selectStation(type, name) {
+    playSoundAction();
+    if (type === 'start') {
+      selectedStart = name;
+      document.getElementById('startValue').innerText = name;
+      document.getElementById('startPickerCard').classList.add('has-value');
+      document.getElementById('startPickerCard').classList.remove('open');
 
-    const { usedStarts, usedEnds } = getUsedStations();
-
-    if (!selectedStart || usedStarts.has(selectedStart)) {
-      selectedStart = stations.find(st => !usedStarts.has(st)) || stations[0];
-    }
-    
-    const startIndex = stations.indexOf(selectedStart);
-    if (!selectedEnd || usedEnds.has(selectedEnd) || stations.indexOf(selectedEnd) <= startIndex) {
-      selectedEnd = stations.find((st, idx) => idx > startIndex && !usedEnds.has(st)) || stations[startIndex + 1] || stations[stations.length - 1];
-    }
-
-    updatePickerUI();
-
-    stations.forEach((st) => {
-      const isUsed = usedStarts.has(st);
-      const startItem = document.createElement('div');
-      startItem.className = `option-item ${st === selectedStart ? 'selected' : ''} ${isUsed ? 'disabled' : ''}`;
-      startItem.innerText = st + (isUsed ? ' (已完成)' : '');
-      if (!isUsed) {
-        startItem.onclick = (e) => {
-          e.stopPropagation();
-          playSoundAction();
-          selectedStart = st;
-          const newStartIndex = stations.indexOf(st);
-          const validEnd = stations.find((s, idx) => idx > newStartIndex && !usedEnds.has(s));
-          selectedEnd = validEnd || stations[newStartIndex + 1] || stations[stations.length - 1];
-          document.getElementById('startPickerCard').classList.remove('open');
-          renderPickers();
-        };
+      const sIdx = stations.indexOf(selectedStart);
+      const eIdx = stations.indexOf(selectedEnd);
+      if (selectedEnd && eIdx <= sIdx) {
+        selectedEnd = "";
+        document.getElementById('endValue').innerText = "請選擇終點";
+        document.getElementById('endPickerCard').classList.remove('has-value');
       }
-      startDropdown.appendChild(startItem);
-    });
+      updateEndOptionsState();
+    } else {
+      const sIdx = stations.indexOf(selectedStart);
+      const eIdx = stations.indexOf(name);
+      if (sIdx !== -1 && eIdx <= sIdx) return;
 
-    stations.forEach((st, idx) => {
-      const isUsed = usedEnds.has(st);
-      const isBeforeOrEqualStart = idx <= startIndex;
-      const isDisabled = isUsed || isBeforeOrEqualStart;
-      const endItem = document.createElement('div');
-      endItem.className = `option-item ${st === selectedEnd ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
-      endItem.innerText = st + (isUsed ? ' (已完成)' : '');
-      if (!isDisabled) {
-        endItem.onclick = (e) => {
-          e.stopPropagation();
-          playSoundAction();
-          selectedEnd = st;
-          document.getElementById('endPickerCard').classList.remove('open');
-          renderPickers();
-        };
+      selectedEnd = name;
+      document.getElementById('endValue').innerText = name;
+      document.getElementById('endPickerCard').classList.add('has-value');
+      document.getElementById('endPickerCard').classList.remove('open');
+    }
+    updateStartBtnState();
+  }
+
+  function updateEndOptionsState() {
+    const sIdx = stations.indexOf(selectedStart);
+    stations.forEach((s, idx) => {
+      if (idx > 0) {
+        const el = document.getElementById('end-opt-' + idx);
+        if (el) {
+          if (sIdx !== -1 && idx <= sIdx) {
+            el.classList.add('disabled');
+          } else {
+            el.classList.remove('disabled');
+          }
+          if (s === selectedEnd) {
+            el.classList.add('selected');
+          } else {
+            el.classList.remove('selected');
+          }
+        }
       }
-      endDropdown.appendChild(endItem);
     });
-
-    fetchWeather();
   }
 
-  function updatePickerUI() {
-    document.getElementById('startValue').innerText = selectedStart || "請選擇起點";
-    document.getElementById('endValue').innerText = selectedEnd || "請選擇終點";
-    const startCard = document.getElementById('startPickerCard');
-    const endCard = document.getElementById('endPickerCard');
-    if (selectedStart) startCard.classList.add('has-value'); else startCard.classList.remove('has-value');
-    if (selectedEnd) endCard.classList.add('has-value'); else endCard.classList.remove('has-value');
-  }
-
-  function updateFlip(id, newDigit) {
-    const card = document.getElementById(id);
-    const top = card.querySelector('.top');
-    const bottom = card.querySelector('.bottom');
-    if (top.innerText === newDigit) return;
-
-    card.querySelectorAll('.active-top, .active-bottom').forEach(e => e.remove());
-
-    const activeTop = document.createElement('div');
-    activeTop.className = 'active-top';
-    activeTop.innerText = top.innerText;
-
-    const activeBottom = document.createElement('div');
-    activeBottom.className = 'active-bottom';
-    activeBottom.innerText = newDigit;
-
-    card.appendChild(activeTop);
-    card.appendChild(activeBottom);
-
-    top.innerText = newDigit;
-    setTimeout(() => { bottom.innerText = newDigit; }, 250);
-  }
-
-  function resetClockDisplay() {
-    ['h1', 'h2', 'm1', 'm2', 's1', 's2'].forEach(id => {
-      const card = document.getElementById(id);
-      card.querySelector('.top').innerText = '0';
-      card.querySelector('.bottom').innerText = '0';
-      card.querySelectorAll('.active-top, .active-bottom').forEach(e => e.remove());
-    });
-    prevStr = "000000";
-    document.getElementById('restClock').innerText = "00:00:00";
+  function updateStartBtnState() {
+    const btn = document.getElementById('btnStart');
+    if (!isTiming) {
+      if (selectedStart && selectedEnd) {
+        btn.disabled = false;
+      } else {
+        btn.disabled = true;
+      }
+    }
   }
 
   function handleMainAction() {
     playSoundAction();
-    if (!isTiming) { startTimer(); } else { triggerJump(); }
-  }
-
-  function spawnGoldenShell() {
-    const stage = document.getElementById('pixelStage');
-    const shell = document.createElement('div');
-    shell.className = 'pixel-shell';
-    let posX = stage.offsetWidth;
-    shell.style.left = posX + 'px';
-    shell.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 20 20">
-        <path d="M10,2 C14,2 18,6 18,10 C18,14 14,18 10,18 C6,18 2,14 2,10 C2,6 6,2 10,2 Z" fill="#E5A93C" stroke="#723C13" stroke-width="1"/>
-        <path d="M10,18 L10,6 M10,6 L6,12 M10,6 L14,12 M10,6 L8,14 M10,6 L12,14" stroke="#FFFDF8" stroke-width="0.8" stroke-linecap="round"/>
-      </svg>
-    `;
-    stage.appendChild(shell);
-    activeShells.push({ element: shell, x: posX, collected: false });
-  }
-
-  let isJumping = false;
-  function triggerJump() {
-    if (isResting) return;
-    const walker = document.getElementById('walkerSvg');
-    walker.classList.add('jump');
-    isJumping = true;
-    checkCollision();
-    setTimeout(() => {
-      walker.classList.remove('jump');
-      isJumping = false;
-    }, 200);
-  }
-
-  function checkCollision() {
-    const walkerLeft = 45;
-    const walkerRight = walkerLeft + 32;
-    activeShells.forEach(shell => {
-      if (!shell.collected && isJumping) {
-        if (shell.x >= walkerLeft - 15 && shell.x <= walkerRight) {
-          shell.collected = true;
-          currentScore++;
-          document.getElementById('scoreBoard').innerText = `Score: ${currentScore}`;
-          shell.element.remove();
-        }
-      }
-    });
-  }
-
-  function isPrime(num) {
-    if (num <= 1) return false;
-    if (num <= 3) return true;
-    if (num % 2 === 0 || num % 3 === 0) return false;
-    for (let i = 5; i * i <= num; i += 6) {
-      if (num % i === 0 || num % (i + 2) === 0) return false;
+    if (!isTiming) {
+      startTimer();
     }
-    return true;
   }
 
   function startTimer() {
-    if (!selectedStart || !selectedEnd) return;
+    isTiming = true;
+    isResting = false;
+    startTime = Date.now();
+    totalPauseTime = 0;
 
-    isTiming = true; isResting = false;
-    startTime = new Date(); totalPauseTime = 0;
-    currentScore = 0;
-    lastSpawnedSecond = -1;
-    document.getElementById('scoreBoard').innerText = `Score: 0`;
-    activeShells = [];
-
-    document.getElementById('startPickerCard').classList.remove('open');
-    document.getElementById('endPickerCard').classList.remove('open');
-
-    const btnStart = document.getElementById('btnStart');
-    btnStart.innerText = '✨ 跳躍！ (JUMP)';
-
-    document.getElementById('btnStop').disabled = false;
+    document.getElementById('btnStart').disabled = true;
     document.getElementById('btnRest').disabled = false;
+    document.getElementById('btnStop').disabled = false;
 
-    document.getElementById('pixelStage').classList.add('anim-running');
-    document.getElementById('progressBarFill').classList.add('walking');
-    
-    drawWalker('WALK', spriteFrame);
-    spriteInterval = setInterval(() => { 
-      if (!isResting) {
-        spriteFrame++; 
-        drawWalker('WALK', spriteFrame); 
-        playSoundStep(); 
-      }
-    }, 250);
+    startSpriteAnim();
 
-    timerInterval = setInterval(tick, 1000);
-
-    gameLoopInterval = setInterval(() => {
-      if (isResting) return;
-      activeShells.forEach((shell, index) => {
-        shell.x -= 3.5;
-        shell.element.style.left = shell.x + 'px';
-        const walkerLeft = 45;
-        const walkerRight = walkerLeft + 32;
-        if (!shell.collected && isJumping && shell.x >= walkerLeft - 15 && shell.x <= walkerRight) {
-          shell.collected = true;
-          currentScore++;
-          document.getElementById('scoreBoard').innerText = `Score: ${currentScore}`;
-          shell.element.remove();
-        }
-        if (shell.x < -30) {
-          shell.element.remove();
-          activeShells.splice(index, 1);
-        }
-      });
-    }, 30);
-  }
-
-  function tick() {
-    const now = new Date();
-    const diff = now - startTime;
-    let currentRest = totalPauseTime + (isResting ? (now - restStartTime) : 0);
-
-    const sec = Math.floor(diff / 1000) % 60;
-    const min = Math.floor(diff / (1000 * 60)) % 60;
-    const hrs = Math.floor(diff / (1000 * 60 * 60));
-
-    const totalSecs = Math.floor(diff / 1000);
-    
-    if (!isResting && totalSecs > 0 && totalSecs !== lastSpawnedSecond && isPrime(totalSecs)) {
-      lastSpawnedSecond = totalSecs;
-      spawnGoldenShell();
-    }
-
-    const str = String(hrs).padStart(2,'0') + String(min).padStart(2,'0') + String(sec).padStart(2,'0');
-    if (str[0] !== prevStr[0]) updateFlip('h1', str[0]);
-    if (str[1] !== prevStr[1]) updateFlip('h2', str[1]);
-    if (str[2] !== prevStr[2]) updateFlip('m1', str[2]);
-    if (str[3] !== prevStr[3]) updateFlip('m2', str[3]);
-    if (str[4] !== prevStr[4]) updateFlip('s1', str[4]);
-    if (str[5] !== prevStr[5]) { updateFlip('s2', str[5]); playSoundTick(); }
-    prevStr = str;
-
-    const rSec = Math.floor(currentRest / 1000) % 60;
-    const rMin = Math.floor(currentRest / (1000 * 60)) % 60;
-    const rHrs = Math.floor(currentRest / (1000 * 60 * 60));
-    document.getElementById('restClock').innerText = 
-      String(rHrs).padStart(2,'0') + ':' + String(rMin).padStart(2,'0') + ':' + String(rSec).padStart(2,'0');
+    timerInterval = setInterval(updateClock, 1000);
+    updateClock();
   }
 
   function toggleRest() {
     playSoundAction();
+    if (!isTiming) return;
     const btnRest = document.getElementById('btnRest');
-    const now = new Date();
+
     if (!isResting) {
       isResting = true;
-      restStartTime = now;
-      btnRest.innerText = 'RESUME / 繼續';
+      restStartTime = Date.now();
+      btnRest.innerText = "RESUME / 繼續";
       btnRest.classList.add('resting');
-      document.getElementById('pixelStage').classList.remove('anim-running');
-      document.getElementById('progressBarFill').classList.remove('walking');
-      drawWalker('REST', 0);
+      stopSpriteAnim();
     } else {
       isResting = false;
-      totalPauseTime += (now - restStartTime);
+      totalPauseTime += (Date.now() - restStartTime);
       restStartTime = null;
-      btnRest.innerText = 'PAUSE / REST';
+      btnRest.innerText = "PAUSE / REST";
       btnRest.classList.remove('resting');
-      document.getElementById('pixelStage').classList.add('anim-running');
-      document.getElementById('progressBarFill').classList.add('walking');
-      drawWalker('WALK', spriteFrame);
+      startSpriteAnim();
     }
   }
 
@@ -2260,180 +2258,343 @@
     playSoundAction();
     if (!isTiming) return;
 
+    let finalDuration = Math.floor((Date.now() - startTime - totalPauseTime) / 1000);
+    if (finalDuration < 0) finalDuration = 0;
+
+    let finalRest = Math.floor(totalPauseTime / 1000);
+    if (isResting && restStartTime) {
+      finalRest += Math.floor((Date.now() - restStartTime) / 1000);
+    }
+
     clearInterval(timerInterval);
-    clearInterval(spriteInterval);
-    clearInterval(gameLoopInterval);
-    document.getElementById('pixelStage').classList.remove('anim-running');
-    document.getElementById('progressBarFill').classList.remove('walking');
+    timerInterval = null;
+    stopSpriteAnim();
 
-    const now = new Date();
-    const diff = now - startTime;
-    let currentRest = totalPauseTime + (isResting ? (now - restStartTime) : 0);
-
-    activeShells.forEach(s => s.element.remove());
-    activeShells = [];
-
-    const durationSec = Math.floor(diff / 1000);
-    const restSec = Math.floor(currentRest / 1000);
-
-    const newRecord = {
+    const record = {
       id: Date.now(),
       route: `${selectedStart} ➔ ${selectedEnd}`,
-      startDate: startTime.toISOString(),
-      duration: durationSec,
-      restTime: restSec,
-      note: currentScore > 0 ? `收集貝殼: ${currentScore}` : '',
-      photo: null
+      duration: finalDuration,
+      restDuration: finalRest,
+      startDate: new Date().toISOString(),
+      note: "",
+      photo: ""
     };
 
-    records.unshift(newRecord);
+    records.push(record);
     saveRecords();
 
-    isTiming = false; isResting = false;
-    document.getElementById('btnStart').innerText = '開始計時';
-    document.getElementById('btnStop').disabled = true;
-    document.getElementById('btnRest').disabled = true;
-    document.getElementById('btnRest').innerText = 'PAUSE / REST';
-    document.getElementById('btnRest').classList.remove('resting');
+    isTiming = false;
+    isResting = false;
+    startTime = null;
+    totalPauseTime = 0;
+    restStartTime = null;
 
-    resetClockDisplay();
-    drawWalker('REST', 0);
-    renderPickers();
-    renderRecords();
+    document.getElementById('btnRest').innerText = "PAUSE / REST";
+    document.getElementById('btnRest').classList.remove('resting');
+    document.getElementById('btnRest').disabled = true;
+    document.getElementById('btnStop').disabled = true;
+
+    selectedStart = "";
+    selectedEnd = "";
+    document.getElementById('startValue').innerText = "請選擇起點";
+    document.getElementById('endValue').innerText = "請選擇終點";
+    document.getElementById('startPickerCard').classList.remove('has-value');
+    document.getElementById('endPickerCard').classList.remove('has-value');
+    populatePickers();
+    updateStartBtnState();
+
+    setFlipCards("000000");
+    document.getElementById('restClock').innerText = "00:00:00";
+
     updateProgressUI();
-    renderCredencial();
+    updateMapMarkers();
+    renderCredencialGrid();
+
+    if (calculateTotalDistance() >= 321.0) {
+      triggerCelebration();
+    } else {
+      openEditRecordModal(record.id);
+    }
+  }
+
+  function updateClock() {
+    if (!isTiming) return;
+
+    if (!isResting) {
+      const now = Date.now();
+      const elapsedSec = Math.floor((now - startTime - totalPauseTime) / 1000);
+      const h = Math.floor(elapsedSec / 3600);
+      const m = Math.floor((elapsedSec % 3600) / 60);
+      const s = elapsedSec % 60;
+
+      const str = String(h).padStart(2, '0') + String(m).padStart(2, '0') + String(s).padStart(2, '0');
+      setFlipCards(str);
+    }
+
+    let currentRestSec = Math.floor(totalPauseTime / 1000);
+    if (isResting && restStartTime) {
+      currentRestSec += Math.floor((Date.now() - restStartTime) / 1000);
+    }
+
+    const rh = Math.floor(currentRestSec / 3600);
+    const rm = Math.floor((currentRestSec % 3600) / 60);
+    const rs = currentRestSec % 60;
+    document.getElementById('restClock').innerText =
+      String(rh).padStart(2, '0') + ":" + String(rm).padStart(2, '0') + ":" + String(rs).padStart(2, '0');
+  }
+
+  function setFlipCards(str) {
+    if (str === prevStr) return;
+    const ids = ['h1', 'h2', 'm1', 'm2', 's1', 's2'];
+    let changed = false;
+
+    for (let i = 0; i < 6; i++) {
+      if (str[i] !== prevStr[i]) {
+        flipCard(ids[i], str[i]);
+        changed = true;
+      }
+    }
+    if (changed) playSoundTick();
+    prevStr = str;
+  }
+
+  function flipCard(id, val) {
+    const card = document.getElementById(id);
+    if (!card) return;
+
+    const top = card.querySelector('.top');
+    const bottom = card.querySelector('.bottom');
+    const currentVal = top.innerText;
+
+    if (currentVal === val) return;
+
+    const activeTop = document.createElement('div');
+    activeTop.className = 'active-top';
+    activeTop.innerText = currentVal;
+
+    const activeBottom = document.createElement('div');
+    activeBottom.className = 'active-bottom';
+    activeBottom.innerText = val;
+
+    bottom.innerText = val;
+
+    card.appendChild(activeTop);
+    card.appendChild(activeBottom);
+
+    setTimeout(() => {
+      top.innerText = val;
+      activeTop.remove();
+      activeBottom.remove();
+    }, 500);
+  }
+
+  function calculateTotalDistance() {
+    let dist = 0;
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        const d1 = stationDistances[parts[0]];
+        const d2 = stationDistances[parts[1]];
+        if (d1 !== undefined && d2 !== undefined) {
+          dist += Math.abs(d2 - d1);
+        }
+      }
+    });
+    return Math.min(dist, 321.0);
+  }
+
+  function updateProgressUI() {
+    const totalDist = calculateTotalDistance();
+    const remain = Math.max(0, 321.0 - totalDist);
+    const pct = Math.min(100, Math.round((totalDist / 321.0) * 100));
+
+    document.getElementById('progressText').innerText = `距離聖地雅哥還有 ${remain.toFixed(1)} 公里`;
+    document.getElementById('progressPercent').innerText = `${pct}%`;
+    document.getElementById('progressBarFill').style.width = `${pct}%`;
   }
 
   function saveRecords() {
-    try {
-      localStorage.setItem('camino_records', JSON.stringify(records));
-    } catch(e) {}
+    localStorage.setItem('camino_records', JSON.stringify(records));
   }
 
-  function renderRecords() {
-    const list = document.getElementById('recordsList');
-    const batchBtn = document.getElementById('btnDeleteBatch');
-    list.innerHTML = '';
+  function openModal(id) {
+    playSoundAction();
+    if (id === 'journalModal') renderJournal();
+    document.getElementById(id).classList.add('open');
+  }
 
-    if (records.length === 0) {
-      list.innerHTML = `<div class="empty-tip">目前尚無行走紀錄，快開始你的第一段朝聖吧！</div>`;
-      batchBtn.style.display = 'none';
+  function closeModal(id) {
+    playSoundAction();
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function renderCredencialGrid() {
+    const grid = document.getElementById('credencialGrid');
+    grid.innerHTML = '';
+
+    const completedSet = getCompletedStationsSet();
+
+    stations.forEach(s => {
+      const isUnlocked = completedSet.has(s);
+      const stamp = stationStamps[s];
+
+      const card = document.createElement('div');
+      card.className = 'sello-card' + (isUnlocked ? ' unlocked' : '');
+      card.onclick = () => {
+        if (isUnlocked) openStampDetail(s);
+      };
+
+      card.innerHTML = `
+        <div class="sello-img-box">${stamp ? stamp.svg : ''}</div>
+        <div class="sello-name">${s}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function openStampDetail(stationKey) {
+    playSoundAction();
+    currentStampKey = stationKey;
+    const stamp = stationStamps[stationKey];
+    if (!stamp) return;
+
+    document.getElementById('stampModalTitle').innerText = stamp.name;
+    document.getElementById('stampLargeSvgContainer').innerHTML = stamp.svg;
+    document.getElementById('stampModalDesc').innerText = stamp.desc;
+
+    openModal('stampDetailModal');
+  }
+
+  function openStatsModal() {
+    playSoundAction();
+    const grid = document.getElementById('statsGrid');
+    const totalDist = calculateTotalDistance();
+    let totalSec = 0, totalRestSec = 0, totalAscent = 0;
+
+    records.forEach(r => {
+      totalSec += (r.duration || 0);
+      totalRestSec += (r.restDuration || 0);
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        totalAscent += calculateAscent(parts[0], parts[1]);
+      }
+    });
+
+    const avgPace = calculatePace(totalSec, totalDist);
+
+    grid.innerHTML = `
+      <div class="stat-box">
+        <div class="stat-value">${totalDist.toFixed(1)} km</div>
+        <div class="stat-label">累積行走距離</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">${formatDuration(totalSec)}</div>
+        <div class="stat-label">累積行走時間</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">${totalAscent} m</div>
+        <div class="stat-label">累積海拔爬升</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">${avgPace}</div>
+        <div class="stat-label">平均行走步速</div>
+      </div>
+    `;
+
+    openModal('statsModal');
+  }
+
+  function formatDuration(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    return `${m}m ${s}s`;
+  }
+
+  function openEditRecordModal(id) {
+    playSoundAction();
+    const r = records.find(item => item.id === id);
+    if (!r) return;
+
+    editingRecordId = id;
+    pendingPhotoData = r.photo || "";
+
+    const parts = r.route.split(' ➔ ');
+    const sStartSelect = document.getElementById('editStartSelect');
+    const sEndSelect = document.getElementById('editEndSelect');
+
+    sStartSelect.innerHTML = '';
+    sEndSelect.innerHTML = '';
+
+    stations.forEach((st, idx) => {
+      if (idx < stations.length - 1) {
+        const opt = document.createElement('option');
+        opt.value = st;
+        opt.innerText = st;
+        if (st === parts[0]) opt.selected = true;
+        sStartSelect.appendChild(opt);
+      }
+      if (idx > 0) {
+        const opt = document.createElement('option');
+        opt.value = st;
+        opt.innerText = st;
+        if (st === parts[1]) opt.selected = true;
+        sEndSelect.appendChild(opt);
+      }
+    });
+
+    const dur = r.duration || 0;
+    document.getElementById('editHrs').value = Math.floor(dur / 3600);
+    document.getElementById('editMins').value = Math.floor((dur % 3600) / 60);
+    document.getElementById('editSecs').value = dur % 60;
+
+    const rDur = r.restDuration || 0;
+    document.getElementById('editRestHrs').value = Math.floor(rDur / 3600);
+    document.getElementById('editRestMins').value = Math.floor((rDur % 3600) / 60);
+    document.getElementById('editRestSecs').value = rDur % 60;
+
+    document.getElementById('editNote').value = r.note || '';
+
+    const imgPreview = document.getElementById('editPhotoPreview');
+    const rmBtn = document.getElementById('editPhotoRemoveBtn');
+    if (r.photo) {
+      imgPreview.src = r.photo;
+      imgPreview.classList.add('show');
+      rmBtn.classList.add('show');
+    } else {
+      imgPreview.src = '';
+      imgPreview.classList.remove('show');
+      rmBtn.classList.remove('show');
+    }
+
+    recalcEditStats();
+    openModal('editRecordModal');
+  }
+
+  function recalcEditStats() {
+    const sStart = document.getElementById('editStartSelect').value;
+    const sEnd = document.getElementById('editEndSelect').value;
+
+    const iStart = stations.indexOf(sStart);
+    const iEnd = stations.indexOf(sEnd);
+
+    if (iStart >= iEnd) {
+      document.getElementById('editAscentDisplay').innerText = "-- m";
+      document.getElementById('editPaceDisplay').innerText = "-- min/km";
       return;
     }
 
-    batchBtn.style.display = 'flex';
+    const dist = Math.abs(stationDistances[sEnd] - stationDistances[sStart]);
+    const ascent = calculateAscent(sStart, sEnd);
 
-    records.forEach((r) => {
-      const card = document.createElement('div');
-      card.className = 'record-card';
+    const h = parseInt(document.getElementById('editHrs').value || 0, 10);
+    const m = parseInt(document.getElementById('editMins').value || 0, 10);
+    const s = parseInt(document.getElementById('editSecs').value || 0, 10);
+    const durSec = h * 3600 + m * 60 + s;
 
-      const hrs = Math.floor(r.duration / 3600);
-      const mins = Math.floor((r.duration % 3600) / 60);
-      const secs = r.duration % 60;
-      const timeStr = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-      
-      const dateObj = new Date(r.startDate);
-      const dateStr = !isNaN(dateObj) ? `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}` : '';
-
-      let noteFlagHtml = r.note ? `<span class="record-note-flag" title="有筆記">📝</span>` : '';
-      let photoFlagHtml = r.photo ? `<span class="record-note-flag" title="有照片">📷</span>` : '';
-
-      card.innerHTML = `
-        <div class="record-left">
-          <input type="checkbox" class="del-chk" data-id="${r.id}" onchange="toggleBatchDeleteBtn()">
-          <div class="record-info">
-            <div class="record-title">${r.route} ${noteFlagHtml} ${photoFlagHtml}</div>
-            <div class="record-sub">${dateStr}</div>
-          </div>
-        </div>
-        <div class="record-time-group">
-          <div style="font-weight:900; font-size:13px; color:#2B1810;">${timeStr}</div>
-          <div style="font-size:10px; font-weight:700; color:#8C7B75;">休息 ${Math.floor(r.restTime/60)}分</div>
-        </div>
-        <button class="record-edit-btn" onclick="openEditModal(${r.id})" title="編輯紀錄">✏️</button>
-      `;
-      list.appendChild(card);
-    });
-    toggleBatchDeleteBtn();
-  }
-
-  function toggleBatchDeleteBtn() {
-    const chks = document.querySelectorAll('.del-chk:checked');
-    const batchBtn = document.getElementById('btnDeleteBatch');
-    if (chks.length > 0) {
-      batchBtn.style.display = 'flex';
-      batchBtn.innerText = `刪除選取項目 (${chks.length})`;
-    } else {
-      batchBtn.innerText = `刪除選取項目`;
-    }
-  }
-
-  function deleteSelected() {
-    playSoundAction();
-    const chks = document.querySelectorAll('.del-chk:checked');
-    if (chks.length === 0) return;
-    if (confirm(`確定要刪除選取的 ${chks.length} 筆紀錄嗎？`)) {
-      const idsToDelete = new Set(Array.from(chks).map(c => Number(c.getAttribute('data-id'))));
-      records = records.filter(r => !idsToDelete.has(r.id));
-      saveRecords();
-      renderRecords();
-      renderPickers();
-      updateProgressUI();
-      renderCredencial();
-    }
-  }
-
-  function openEditModal(id) {
-    playSoundAction();
-    editingRecordId = id;
-    const record = records.find(r => r.id === id);
-    if (!record) return;
-
-    const startSelect = document.getElementById('editStartSelect');
-    const endSelect = document.getElementById('editEndSelect');
-
-    startSelect.innerHTML = '';
-    endSelect.innerHTML = '';
-
-    stations.forEach(st => {
-      startSelect.add(new Option(st, st));
-      endSelect.add(new Option(st, st));
-    });
-
-    const parts = record.route.split(' ➔ ');
-    if (parts.length === 2) {
-      startSelect.value = parts[0];
-      endSelect.value = parts[1];
-    }
-
-    const d = record.duration || 0;
-    document.getElementById('editHrs').value = Math.floor(d / 3600);
-    document.getElementById('editMins').value = Math.floor((d % 3600) / 60);
-    document.getElementById('editSecs').value = d % 60;
-
-    const r = record.restTime || 0;
-    document.getElementById('editRestHrs').value = Math.floor(r / 3600);
-    document.getElementById('editRestMins').value = Math.floor((r % 3600) / 60);
-    document.getElementById('editRestSecs').value = r % 60;
-
-    document.getElementById('editNote').value = record.note || '';
-
-    pendingPhotoData = record.photo || null;
-    const preview = document.getElementById('editPhotoPreview');
-    const removeBtn = document.getElementById('editPhotoRemoveBtn');
-    document.getElementById('editPhotoInput').value = '';
-
-    if (pendingPhotoData) {
-      preview.src = pendingPhotoData;
-      preview.classList.add('show');
-      removeBtn.classList.add('show');
-    } else {
-      preview.src = '';
-      preview.classList.remove('show');
-      removeBtn.classList.remove('show');
-    }
-
-    openModal('editRecordModal');
+    document.getElementById('editAscentDisplay').innerText = `${ascent} m`;
+    document.getElementById('editPaceDisplay').innerText = calculatePace(durSec, dist);
   }
 
   function handlePhotoInput(e) {
@@ -2441,77 +2602,193 @@
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
-      pendingPhotoData = evt.target.result;
-      const preview = document.getElementById('editPhotoPreview');
-      const removeBtn = document.getElementById('editPhotoRemoveBtn');
-      preview.src = pendingPhotoData;
-      preview.classList.add('show');
-      removeBtn.classList.add('show');
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        const max = 800;
+        if (w > max || h > max) {
+          if (w > h) { h = Math.round((h * max) / w); w = max; }
+          else { w = Math.round((w * max) / h); h = max; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        pendingPhotoData = canvas.toDataURL('image/jpeg', 0.7);
+
+        const imgPreview = document.getElementById('editPhotoPreview');
+        imgPreview.src = pendingPhotoData;
+        imgPreview.classList.add('show');
+        document.getElementById('editPhotoRemoveBtn').classList.add('show');
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   }
 
   function removeEditPhoto() {
-    playSoundAction();
-    pendingPhotoData = null;
-    document.getElementById('editPhotoInput').value = '';
-    const preview = document.getElementById('editPhotoPreview');
-    const removeBtn = document.getElementById('editPhotoRemoveBtn');
-    preview.src = '';
-    preview.classList.remove('show');
-    removeBtn.classList.remove('show');
+    pendingPhotoData = "";
+    document.getElementById('editPhotoInput').value = "";
+    document.getElementById('editPhotoPreview').src = "";
+    document.getElementById('editPhotoPreview').classList.remove('show');
+    document.getElementById('editPhotoRemoveBtn').classList.remove('show');
   }
 
   function saveEditRecord() {
     playSoundAction();
-    if (!editingRecordId) return;
+    const r = records.find(item => item.id === editingRecordId);
+    if (!r) return;
 
-    const record = records.find(r => r.id === editingRecordId);
-    if (!record) return;
+    const sStart = document.getElementById('editStartSelect').value;
+    const sEnd = document.getElementById('editEndSelect').value;
 
-    const st = document.getElementById('editStartSelect').value;
-    const en = document.getElementById('editEndSelect').value;
-    if (st === en) {
-      alert('起點與終點不能相同！');
+    if (stations.indexOf(sStart) >= stations.indexOf(sEnd)) {
+      alert("終點必須在起點之後！");
       return;
     }
 
-    record.route = `${st} ➔ ${en}`;
+    const h = parseInt(document.getElementById('editHrs').value || 0, 10);
+    const m = parseInt(document.getElementById('editMins').value || 0, 10);
+    const s = parseInt(document.getElementById('editSecs').value || 0, 10);
 
-    const hrs = parseInt(document.getElementById('editHrs').value) || 0;
-    const mins = parseInt(document.getElementById('editMins').value) || 0;
-    const secs = parseInt(document.getElementById('editSecs').value) || 0;
-    record.duration = (hrs * 3600) + (mins * 60) + secs;
+    const rh = parseInt(document.getElementById('editRestHrs').value || 0, 10);
+    const rm = parseInt(document.getElementById('editRestMins').value || 0, 10);
+    const rs = parseInt(document.getElementById('editRestSecs').value || 0, 10);
 
-    const rHrs = parseInt(document.getElementById('editRestHrs').value) || 0;
-    const rMins = parseInt(document.getElementById('editRestMins').value) || 0;
-    const rSecs = parseInt(document.getElementById('editRestSecs').value) || 0;
-    record.restTime = (rHrs * 3600) + (rMins * 60) + rSecs;
-
-    record.note = document.getElementById('editNote').value.trim();
-    record.photo = pendingPhotoData;
+    r.route = `${sStart} ➔ ${sEnd}`;
+    r.duration = h * 3600 + m * 60 + s;
+    r.restDuration = rh * 3600 + rm * 60 + rs;
+    r.note = document.getElementById('editNote').value;
+    r.photo = pendingPhotoData;
 
     saveRecords();
     closeModal('editRecordModal');
-    renderRecords();
-    renderPickers();
     updateProgressUI();
-    renderCredencial();
+    updateMapMarkers();
+    renderCredencialGrid();
+
+    if (document.getElementById('journalModal').classList.contains('open')) {
+      renderJournal();
+    }
+  }
+
+  function deleteSingleRecord(id) {
+    playSoundAction();
+    if (confirm("確定要刪除這筆行走紀錄嗎？")) {
+      records = records.filter(r => r.id !== id);
+      saveRecords();
+      updateProgressUI();
+      updateMapMarkers();
+      renderCredencialGrid();
+      renderJournal();
+    }
   }
 
   function deleteFromEditModal() {
-    playSoundAction();
-    if (!editingRecordId) return;
-    if (confirm('確定要刪除這筆紀錄嗎？')) {
-      records = records.filter(r => r.id !== editingRecordId);
-      saveRecords();
+    if (editingRecordId) {
+      deleteSingleRecord(editingRecordId);
       closeModal('editRecordModal');
-      renderRecords();
-      renderPickers();
-      updateProgressUI();
-      renderCredencial();
     }
+  }
+
+  function openPhotoLightbox(src, e) {
+    if (e) e.stopPropagation();
+    playSoundAction();
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('photoLightbox').classList.add('open');
+  }
+
+  function closePhotoLightbox() {
+    playSoundAction();
+    document.getElementById('photoLightbox').classList.remove('open');
+  }
+
+  function triggerCelebration() {
+    playSoundAction();
+    document.getElementById('celebrationOverlay').classList.add('open');
+  }
+
+  function closeCelebration() {
+    playSoundAction();
+    document.getElementById('celebrationOverlay').classList.remove('open');
+  }
+
+  function generateShareCard() {
+    playSoundAction();
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = "#FAF6EF";
+    ctx.fillRect(0, 0, 800, 1000);
+
+    ctx.strokeStyle = "#723C13";
+    ctx.lineWidth = 12;
+    ctx.strokeRect(20, 20, 760, 960);
+
+    ctx.fillStyle = "#8B2014";
+    ctx.font = "900 36px 'Cinzel', serif";
+    ctx.textAlign = "center";
+    ctx.fillText("CAMINO PRIMITIVO", 400, 100);
+
+    ctx.fillStyle = "#6E5D54";
+    ctx.font = "800 20px 'Montserrat', sans-serif";
+    ctx.fillText("朝聖之路 · 行走成就紀錄", 400, 140);
+
+    const totalDist = calculateTotalDistance();
+    let totalSec = 0, totalAscent = 0;
+    records.forEach(r => {
+      totalSec += (r.duration || 0);
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) totalAscent += calculateAscent(parts[0], parts[1]);
+    });
+
+    ctx.fillStyle = "#E2D7C5";
+    ctx.fillRect(80, 200, 640, 160);
+    ctx.strokeStyle = "#C4B59D";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(80, 200, 640, 160);
+
+    ctx.fillStyle = "#8B2014";
+    ctx.font = "900 48px 'Montserrat', sans-serif";
+    ctx.fillText(`${totalDist.toFixed(1)} KM`, 400, 270);
+
+    ctx.fillStyle = "#2B1810";
+    ctx.font = "800 20px 'Montserrat', sans-serif";
+    ctx.fillText(`總時間: ${formatDuration(totalSec)}  |  總爬升: ${totalAscent} m`, 400, 320);
+
+    const link = document.createElement('a');
+    link.download = 'Camino_Achievement.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  function downloadCompostela() {
+    playSoundAction();
+    const canvas = document.getElementById('compostelaCanvas');
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = "#F7F3EB";
+    ctx.fillRect(0, 0, 1000, 1400);
+
+    ctx.strokeStyle = "#8B2014";
+    ctx.lineWidth = 16;
+    ctx.strokeRect(30, 30, 940, 1340);
+
+    ctx.fillStyle = "#2B1810";
+    ctx.font = "900 42px 'Cinzel', serif";
+    ctx.textAlign = "center";
+    ctx.fillText("COMPOSTELA", 500, 180);
+
+    ctx.font = "800 22px 'Montserrat', sans-serif";
+    ctx.fillText("CAPITULUM METROPOLITANAE ECCLESIAE COMPOSTELLANAE", 500, 240);
+
+    const link = document.createElement('a');
+    link.download = 'Compostela_Certificate.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   }
 </script>
 </body>
