@@ -1358,7 +1358,7 @@
         按日期整理的照片、筆記、路段與對應郵戳
       </div>
       <div id="journalContainer"></div>
-      <button class="btn-share-card" onclick="downloadJournalPNG()">🖼️ 下載手記內容 (PNG)</button>
+      <button class="btn-share-card" onclick="downloadJournalPNG()">🖼️ 分享手記 png 至手機</button>
     </div>
   </div>
 </div>
@@ -1386,7 +1386,7 @@
     </div>
     <div class="modal-body">
       <div class="stats-grid" id="statsGrid"></div>
-      <button class="btn-share-card" onclick="generateShareCard()">📤 產生分享成就卡</button>
+      <button class="btn-share-card" onclick="generateShareCard()">📤 分享成就卡 png 至手機</button>
     </div>
   </div>
 </div>
@@ -1456,7 +1456,7 @@
     </div>
     <div class="modal-body stamp-detail-box">
       <div class="stamp-large-circle" id="stampLargeSvgContainer"></div>
-      <button class="btn-download-stamp" onclick="downloadCurrentStampPNG()">🖼️ 下載郵戳 (PNG)</button>
+      <button class="btn-download-stamp" onclick="downloadCurrentStampPNG()">🖼️ 分享郵戳 png 至手機</button>
       <div id="stampModalDesc"></div>
     </div>
   </div>
@@ -1467,7 +1467,7 @@
     <div style="font-size: 50px;">🐚✨</div>
     <div class="celebration-title">¡ENHORABUENA!</div>
     <div class="celebration-sub">恭喜您順利完成 321 公里 Camino Primitivo 朝聖之旅！</div>
-    <button class="btn-compostela" onclick="downloadCompostela()">📜 下載拉丁文風格完證證書</button>
+    <button class="btn-compostela" onclick="downloadCompostela()">📜 分享完證證書 png 至手機</button>
     <button class="header-btn" style="margin-top: 10px;" onclick="closeCelebration()">關閉慶祝畫面</button>
   </div>
 </div>
@@ -1785,6 +1785,32 @@
   let mapPolyline = null;
   let stationWeatherData = {};
 
+  // 通用分享/儲存 PNG 工具函式，優先呼叫 Web Share API 儲存至手機相簿，若不支援則降級為下載
+  async function saveCanvasToGallery(canvas, filename) {
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Camino PNG',
+            text: '分享/儲存 PNG 至手機相簿'
+          });
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.warn('分享失敗，轉用下載備案', err);
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }
+
   function calculateAscent(sStart, sEnd) {
     const iStart = stations.indexOf(sStart);
     const iEnd = stations.indexOf(sEnd);
@@ -1998,7 +2024,7 @@
     }
   }
 
-  /* 下載當前手記卡片為 PNG 檔 */
+  /* 分享當前手記卡片 png 至手機 */
   function downloadJournalPNG() {
     playSoundAction();
     const activeSlide = document.querySelector('.journal-page-slide.active .journal-day-card');
@@ -2014,17 +2040,14 @@
       useCORS: true
     }).then(canvas => {
       if (actions) actions.style.display = 'flex';
-      const link = document.createElement('a');
-      link.download = `Camino_Journal_Day${currentJournalPageIndex + 1}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      saveCanvasToGallery(canvas, `Camino_Journal_Day${currentJournalPageIndex + 1}.png`);
     }).catch(err => {
       if (actions) actions.style.display = 'flex';
-      console.error('手記 PNG 下載失敗', err);
+      console.error('手記 PNG 分享失敗', err);
     });
   }
 
-  /* 下載目前開啟的郵戳為 PNG 檔 */
+  /* 分享目前開啟的郵戳 png 至手機 */
   function downloadCurrentStampPNG() {
     playSoundAction();
     const container = document.getElementById('stampLargeSvgContainer');
@@ -2044,10 +2067,7 @@
     img.onload = function() {
       ctx.drawImage(img, 0, 0, 500, 500);
       URL.revokeObjectURL(url);
-      const link = document.createElement('a');
-      link.download = `Stamp_${currentStampKey || 'Camino'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      saveCanvasToGallery(canvas, `Stamp_${currentStampKey || 'Camino'}.png`);
     };
     img.src = url;
   }
@@ -2068,145 +2088,105 @@
       <ellipse cx="14" cy="37" rx="8" ry="1.5" fill="rgba(0,0,0,0.2)"/>
       <line x1="${legL.split(' ')[0].split(',')[0]}" y1="${legL.split(' ')[0].split(',')[1]}" x2="${legL.split(' ')[1].split(',')[0]}" y2="${legL.split(' ')[1].split(',')[1]}" stroke="#2B1810" stroke-width="2.5" stroke-linecap="round"/>
       <line x1="${legR.split(' ')[0].split(',')[0]}" y1="${legR.split(' ')[0].split(',')[1]}" x2="${legR.split(' ')[1].split(',')[0]}" y2="${legR.split(' ')[1].split(',')[1]}" stroke="#2B1810" stroke-width="2.5" stroke-linecap="round"/>
-      <rect x="9" y="${17+bodyY}" width="10" height="13" rx="2" fill="#8B2014"/>
-      <rect x="5" y="${16+bodyY}" width="6" height="12" rx="2" fill="#23120B"/>
-      <circle cx="14" cy="${11+headY}" r="5.5" fill="#DCA048"/>
-      <path d="M7,${9+headY} Q14,${4+headY} 21,${9+headY} L23,${11+headY} L5,${11+headY} Z" fill="#D48439"/>
-      <line x1="${armL.split(' ')[0].split(',')[0]}" y1="${armL.split(' ')[0].split(',')[1]}" x2="${armL.split(' ')[1].split(',')[0]}" y2="${armL.split(' ')[1].split(',')[1]}" stroke="#8B2014" stroke-width="2" stroke-linecap="round"/>
-      <line x1="${armR.split(' ')[0].split(',')[0]}" y1="${armR.split(' ')[0].split(',')[1]}" x2="${armR.split(' ')[1].split(',')[0]}" y2="${armR.split(' ')[1].split(',')[1]}" stroke="#8B2014" stroke-width="2" stroke-linecap="round"/>
-      <line x1="22" y1="${12+bodyY}" x2="24" y2="37" stroke="#7C706B" stroke-width="1.5" stroke-linecap="round"/>
+      <rect x="9" y="${18 + bodyY}" width="10" height="12" rx="2" fill="#8B2014"/>
+      <rect x="6" y="${19 + bodyY}" width="5" height="10" rx="1.5" fill="#3D251A"/>
+      <line x1="${armL.split(' ')[0].split(',')[0]}" y1="${parseInt(armL.split(' ')[0].split(',')[1]) + bodyY}" x2="${armL.split(' ')[1].split(',')[0]}" y2="${parseInt(armL.split(' ')[1].split(',')[1]) + bodyY}" stroke="#2B1810" stroke-width="2" stroke-linecap="round"/>
+      <line x1="${armR.split(' ')[0].split(',')[0]}" y1="${parseInt(armR.split(' ')[0].split(',')[1]) + bodyY}" x2="${armR.split(' ')[1].split(',')[0]}" y2="${parseInt(armR.split(' ')[1].split(',')[1]) + bodyY}" stroke="#2B1810" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="14" cy="${11 + headY}" r="5.5" fill="#DCA048"/>
+      <path d="M7,${10 + headY} Q14,${5 + headY} 21,${10 + headY} L23,${11 + headY} L5,${11 + headY} Z" fill="#E5A93C"/>
+      <line x1="20" y1="${12 + bodyY}" x2="22" y2="37" stroke="#96541D" stroke-width="1.5" stroke-linecap="round"/>
     `;
   }
 
-  function startSpriteAnim() {
+  function startSpriteAnimation() {
     if (spriteInterval) clearInterval(spriteInterval);
-    document.getElementById('pixelStage').classList.add('anim-running');
-    document.getElementById('progressBarFill').classList.add('walking');
     spriteInterval = setInterval(() => {
       spriteFrame++;
       renderWalkerFrame(spriteFrame);
-    }, 220);
+    }, 200);
   }
 
-  function stopSpriteAnim() {
+  function stopSpriteAnimation() {
     if (spriteInterval) clearInterval(spriteInterval);
-    spriteInterval = null;
-    document.getElementById('pixelStage').classList.remove('anim-running');
-    document.getElementById('progressBarFill').classList.remove('walking');
+    spriteFrame = 0;
     renderWalkerFrame(0);
   }
 
   function init() {
-    populatePickers();
     renderWalkerFrame(0);
-    renderCredencialGrid();
+    populateDropdowns();
     updateProgressUI();
-
-    fetchAllStationsWeather().then(() => {
-      initMap();
-    });
+    initMap();
+    fetchAllStationsWeather().then(() => updateMapMarkers());
   }
 
-  function populatePickers() {
+  function populateDropdowns() {
     const sDrop = document.getElementById('startDropdown');
     const eDrop = document.getElementById('endDropdown');
     sDrop.innerHTML = '';
     eDrop.innerHTML = '';
 
-    stations.forEach((s, idx) => {
-      if (idx < stations.length - 1) {
-        const itemS = document.createElement('div');
-        itemS.className = 'option-item' + (s === selectedStart ? ' selected' : '');
-        itemS.innerText = s;
-        itemS.onclick = () => selectStation('start', s);
-        sDrop.appendChild(itemS);
-      }
+    stations.forEach((st, idx) => {
+      const sOpt = document.createElement('div');
+      sOpt.className = 'option-item';
+      sOpt.innerText = `${idx + 1}. ${st}`;
+      sOpt.onclick = () => selectStation('start', st);
+      sDrop.appendChild(sOpt);
 
-      if (idx > 0) {
-        const itemE = document.createElement('div');
-        itemE.className = 'option-item';
-        itemE.innerText = s;
-        itemE.id = 'end-opt-' + idx;
-        itemE.onclick = () => selectStation('end', s);
-        eDrop.appendChild(itemE);
-      }
+      const eOpt = document.createElement('div');
+      eOpt.className = 'option-item';
+      eOpt.innerText = `${idx + 1}. ${st}`;
+      eOpt.onclick = () => selectStation('end', st);
+      eDrop.appendChild(eOpt);
     });
-    updateEndOptionsState();
   }
 
   function togglePicker(type) {
     if (isTiming) return;
     playSoundAction();
-    const cardS = document.getElementById('startPickerCard');
-    const cardE = document.getElementById('endPickerCard');
-
-    if (type === 'start') {
-      cardE.classList.remove('open');
-      cardS.classList.toggle('open');
-    } else {
-      cardS.classList.remove('open');
-      cardE.classList.toggle('open');
-    }
+    const card = document.getElementById(`${type}PickerCard`);
+    const isOpen = card.classList.contains('open');
+    document.querySelectorAll('.picker-card').forEach(c => c.classList.remove('open'));
+    if (!isOpen) card.classList.add('open');
   }
 
-  function selectStation(type, name) {
+  function selectStation(type, station) {
     playSoundAction();
     if (type === 'start') {
-      selectedStart = name;
-      document.getElementById('startValue').innerText = name;
+      selectedStart = station;
+      document.getElementById('startValue').innerText = station;
       document.getElementById('startPickerCard').classList.add('has-value');
-      document.getElementById('startPickerCard').classList.remove('open');
-
-      const sIdx = stations.indexOf(selectedStart);
-      const eIdx = stations.indexOf(selectedEnd);
-      if (selectedEnd && eIdx <= sIdx) {
-        selectedEnd = "";
-        document.getElementById('endValue').innerText = "請選擇終點";
-        document.getElementById('endPickerCard').classList.remove('has-value');
-      }
-      updateEndOptionsState();
     } else {
-      const sIdx = stations.indexOf(selectedStart);
-      const eIdx = stations.indexOf(name);
-      if (sIdx !== -1 && eIdx <= sIdx) return;
-
-      selectedEnd = name;
-      document.getElementById('endValue').innerText = name;
+      selectedEnd = station;
+      document.getElementById('endValue').innerText = station;
       document.getElementById('endPickerCard').classList.add('has-value');
-      document.getElementById('endPickerCard').classList.remove('open');
     }
-    updateStartBtnState();
+    document.getElementById(`${type}PickerCard`).classList.remove('open');
+    validatePickers();
   }
 
-  function updateEndOptionsState() {
+  function validatePickers() {
     const sIdx = stations.indexOf(selectedStart);
-    stations.forEach((s, idx) => {
-      if (idx > 0) {
-        const el = document.getElementById('end-opt-' + idx);
-        if (el) {
-          if (sIdx !== -1 && idx <= sIdx) {
-            el.classList.add('disabled');
-          } else {
-            el.classList.remove('disabled');
-          }
-          if (s === selectedEnd) {
-            el.classList.add('selected');
-          } else {
-            el.classList.remove('selected');
-          }
-        }
-      }
-    });
-  }
+    const eIdx = stations.indexOf(selectedEnd);
 
-  function updateStartBtnState() {
-    const btn = document.getElementById('btnStart');
-    if (!isTiming) {
-      if (selectedStart && selectedEnd) {
-        btn.disabled = false;
-      } else {
-        btn.disabled = true;
-      }
+    const sOptions = document.querySelectorAll('#startDropdown .option-item');
+    const eOptions = document.querySelectorAll('#endDropdown .option-item');
+
+    sOptions.forEach((opt, idx) => {
+      if (eIdx !== -1 && idx >= eIdx) opt.classList.add('disabled');
+      else opt.classList.remove('disabled');
+    });
+
+    eOptions.forEach((opt, idx) => {
+      if (sIdx !== -1 && idx <= sIdx) opt.classList.add('disabled');
+      else opt.classList.remove('disabled');
+    });
+
+    const btnStart = document.getElementById('btnStart');
+    if (sIdx !== -1 && eIdx !== -1 && sIdx < eIdx) {
+      btnStart.disabled = false;
+    } else {
+      btnStart.disabled = true;
     }
   }
 
@@ -2222,35 +2202,43 @@
     isResting = false;
     startTime = Date.now();
     totalPauseTime = 0;
+    restStartTime = null;
 
     document.getElementById('btnStart').disabled = true;
     document.getElementById('btnRest').disabled = false;
     document.getElementById('btnStop').disabled = false;
+    document.getElementById('pixelStage').classList.add('anim-running');
+    document.getElementById('progressBarFill').classList.add('walking');
 
-    startSpriteAnim();
+    startSpriteAnimation();
 
-    timerInterval = setInterval(updateClock, 1000);
-    updateClock();
+    timerInterval = setInterval(updateTimerDisplay, 250);
   }
 
   function toggleRest() {
     playSoundAction();
     if (!isTiming) return;
-    const btnRest = document.getElementById('btnRest');
 
+    const btnRest = document.getElementById('btnRest');
     if (!isResting) {
       isResting = true;
       restStartTime = Date.now();
-      btnRest.innerText = "RESUME / 繼續";
+      btnRest.innerText = 'RESUME / 繼續';
       btnRest.classList.add('resting');
-      stopSpriteAnim();
+      document.getElementById('pixelStage').classList.remove('anim-running');
+      document.getElementById('progressBarFill').classList.remove('walking');
+      stopSpriteAnimation();
     } else {
       isResting = false;
-      totalPauseTime += (Date.now() - restStartTime);
-      restStartTime = null;
-      btnRest.innerText = "PAUSE / REST";
+      if (restStartTime) {
+        totalPauseTime += (Date.now() - restStartTime);
+        restStartTime = null;
+      }
+      btnRest.innerText = 'PAUSE / REST';
       btnRest.classList.remove('resting');
-      startSpriteAnim();
+      document.getElementById('pixelStage').classList.add('anim-running');
+      document.getElementById('progressBarFill').classList.add('walking');
+      startSpriteAnimation();
     }
   }
 
@@ -2258,168 +2246,149 @@
     playSoundAction();
     if (!isTiming) return;
 
-    let finalDuration = Math.floor((Date.now() - startTime - totalPauseTime) / 1000);
-    if (finalDuration < 0) finalDuration = 0;
-
-    let finalRest = Math.floor(totalPauseTime / 1000);
+    const now = Date.now();
+    let currentRest = totalPauseTime;
     if (isResting && restStartTime) {
-      finalRest += Math.floor((Date.now() - restStartTime) / 1000);
+      currentRest += (now - restStartTime);
     }
 
-    clearInterval(timerInterval);
-    timerInterval = null;
-    stopSpriteAnim();
+    const durationSec = Math.floor((now - startTime - currentRest) / 1000);
+    const restSec = Math.floor(currentRest / 1000);
 
-    const record = {
+    const newRecord = {
       id: Date.now(),
       route: `${selectedStart} ➔ ${selectedEnd}`,
-      duration: finalDuration,
-      restDuration: finalRest,
-      startDate: new Date().toISOString(),
-      note: "",
-      photo: ""
+      duration: durationSec,
+      restDuration: restSec,
+      startDate: new Date(startTime).toISOString(),
+      endDate: new Date(now).toISOString(),
+      note: '',
+      photo: null
     };
 
-    records.push(record);
+    records.push(newRecord);
     saveRecords();
 
     isTiming = false;
     isResting = false;
-    startTime = null;
-    totalPauseTime = 0;
-    restStartTime = null;
+    clearInterval(timerInterval);
+    stopSpriteAnimation();
 
-    document.getElementById('btnRest').innerText = "PAUSE / REST";
-    document.getElementById('btnRest').classList.remove('resting');
+    document.getElementById('pixelStage').classList.remove('anim-running');
+    document.getElementById('progressBarFill').classList.remove('walking');
+    document.getElementById('btnStart').disabled = false;
     document.getElementById('btnRest').disabled = true;
+    document.getElementById('btnRest').innerText = 'PAUSE / REST';
+    document.getElementById('btnRest').classList.remove('resting');
     document.getElementById('btnStop').disabled = true;
 
-    selectedStart = "";
-    selectedEnd = "";
-    document.getElementById('startValue').innerText = "請選擇起點";
-    document.getElementById('endValue').innerText = "請選擇終點";
-    document.getElementById('startPickerCard').classList.remove('has-value');
-    document.getElementById('endPickerCard').classList.remove('has-value');
-    populatePickers();
-    updateStartBtnState();
-
-    setFlipCards("000000");
-    document.getElementById('restClock').innerText = "00:00:00";
-
+    resetClockUI();
     updateProgressUI();
     updateMapMarkers();
-    renderCredencialGrid();
 
-    if (calculateTotalDistance() >= 321.0) {
-      triggerCelebration();
-    } else {
-      openEditRecordModal(record.id);
+    if (getCompletedStationsSet().has('Santiago')) {
+      openCelebration();
     }
   }
 
-  function updateClock() {
+  function updateTimerDisplay() {
     if (!isTiming) return;
 
-    if (!isResting) {
-      const now = Date.now();
-      const elapsedSec = Math.floor((now - startTime - totalPauseTime) / 1000);
-      const h = Math.floor(elapsedSec / 3600);
-      const m = Math.floor((elapsedSec % 3600) / 60);
-      const s = elapsedSec % 60;
-
-      const str = String(h).padStart(2, '0') + String(m).padStart(2, '0') + String(s).padStart(2, '0');
-      setFlipCards(str);
-    }
-
-    let currentRestSec = Math.floor(totalPauseTime / 1000);
+    const now = Date.now();
+    let currentRest = totalPauseTime;
     if (isResting && restStartTime) {
-      currentRestSec += Math.floor((Date.now() - restStartTime) / 1000);
+      currentRest += (now - restStartTime);
     }
 
-    const rh = Math.floor(currentRestSec / 3600);
-    const rm = Math.floor((currentRestSec % 3600) / 60);
-    const rs = currentRestSec % 60;
-    document.getElementById('restClock').innerText =
-      String(rh).padStart(2, '0') + ":" + String(rm).padStart(2, '0') + ":" + String(rs).padStart(2, '0');
-  }
+    const elapsedMs = now - startTime - currentRest;
+    const totalSec = Math.max(0, Math.floor(elapsedMs / 1000));
 
-  function setFlipCards(str) {
-    if (str === prevStr) return;
-    const ids = ['h1', 'h2', 'm1', 'm2', 's1', 's2'];
-    let changed = false;
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
 
-    for (let i = 0; i < 6; i++) {
-      if (str[i] !== prevStr[i]) {
-        flipCard(ids[i], str[i]);
-        changed = true;
-      }
-    }
-    if (changed) playSoundTick();
+    const str = String(hrs).padStart(2, '0') + String(mins).padStart(2, '0') + String(secs).padStart(2, '0');
+
+    if (str[5] !== prevStr[5]) playSoundTick();
+
+    updateFlipCard('h1', str[0], prevStr[0]);
+    updateFlipCard('h2', str[1], prevStr[1]);
+    updateFlipCard('m1', str[2], prevStr[2]);
+    updateFlipCard('m2', str[3], prevStr[3]);
+    updateFlipCard('s1', str[4], prevStr[4]);
+    updateFlipCard('s2', str[5], prevStr[5]);
+
     prevStr = str;
+
+    const rSec = Math.floor(currentRest / 1000);
+    const rH = String(Math.floor(rSec / 3600)).padStart(2, '0');
+    const rM = String(Math.floor((rSec % 3600) / 60)).padStart(2, '0');
+    const rS = String(rSec % 60).padStart(2, '0');
+    document.getElementById('restClock').innerText = `${rH}:${rM}:${rS}`;
   }
 
-  function flipCard(id, val) {
+  function updateFlipCard(id, newDigit, oldDigit) {
+    if (newDigit === oldDigit) return;
     const card = document.getElementById(id);
-    if (!card) return;
-
     const top = card.querySelector('.top');
     const bottom = card.querySelector('.bottom');
-    const currentVal = top.innerText;
 
-    if (currentVal === val) return;
+    top.innerText = newDigit;
+    bottom.innerText = oldDigit;
 
     const activeTop = document.createElement('div');
     activeTop.className = 'active-top';
-    activeTop.innerText = currentVal;
+    activeTop.innerText = oldDigit;
 
     const activeBottom = document.createElement('div');
     activeBottom.className = 'active-bottom';
-    activeBottom.innerText = val;
-
-    bottom.innerText = val;
+    activeBottom.innerText = newDigit;
 
     card.appendChild(activeTop);
     card.appendChild(activeBottom);
 
     setTimeout(() => {
-      top.innerText = val;
+      bottom.innerText = newDigit;
       activeTop.remove();
       activeBottom.remove();
     }, 500);
   }
 
-  function calculateTotalDistance() {
-    let dist = 0;
-    records.forEach(r => {
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2) {
-        const d1 = stationDistances[parts[0]];
-        const d2 = stationDistances[parts[1]];
-        if (d1 !== undefined && d2 !== undefined) {
-          dist += Math.abs(d2 - d1);
-        }
-      }
+  function resetClockUI() {
+    prevStr = "000000";
+    ['h1','h2','m1','m2','s1','s2'].forEach(id => {
+      const card = document.getElementById(id);
+      card.querySelector('.top').innerText = '0';
+      card.querySelector('.bottom').innerText = '0';
     });
-    return Math.min(dist, 321.0);
+    document.getElementById('restClock').innerText = '00:00:00';
   }
 
   function updateProgressUI() {
-    const totalDist = calculateTotalDistance();
-    const remain = Math.max(0, 321.0 - totalDist);
-    const pct = Math.min(100, Math.round((totalDist / 321.0) * 100));
+    const completedSet = getCompletedStationsSet();
+    let maxDist = 0;
 
-    document.getElementById('progressText').innerText = `距離聖地雅哥還有 ${remain.toFixed(1)} 公里`;
+    stations.forEach(st => {
+      if (completedSet.has(st)) {
+        if (stationDistances[st] > maxDist) maxDist = stationDistances[st];
+      }
+    });
+
+    const remainDist = Math.max(0, 321.0 - maxDist);
+    const pct = Math.min(100, Math.round((maxDist / 321.0) * 100));
+
+    document.getElementById('progressText').innerText = `距離聖地雅哥還有 ${remainDist.toFixed(1)} 公里`;
     document.getElementById('progressPercent').innerText = `${pct}%`;
     document.getElementById('progressBarFill').style.width = `${pct}%`;
   }
 
-  function saveRecords() {
-    localStorage.setItem('camino_records', JSON.stringify(records));
-  }
-
   function openModal(id) {
     playSoundAction();
-    if (id === 'journalModal') renderJournal();
+    if (id === 'credencialModal') renderCredencialGrid();
+    if (id === 'journalModal') {
+      currentJournalPageIndex = records.length - 1;
+      renderJournal();
+    }
     document.getElementById(id).classList.add('open');
   }
 
@@ -2434,19 +2403,16 @@
 
     const completedSet = getCompletedStationsSet();
 
-    stations.forEach(s => {
-      const isUnlocked = completedSet.has(s);
-      const stamp = stationStamps[s];
-
+    stations.forEach(st => {
+      const isDone = completedSet.has(st);
+      const stamp = stationStamps[st];
       const card = document.createElement('div');
-      card.className = 'sello-card' + (isUnlocked ? ' unlocked' : '');
-      card.onclick = () => {
-        if (isUnlocked) openStampDetail(s);
-      };
+      card.className = `sello-card ${isDone ? 'unlocked' : ''}`;
+      card.onclick = () => openStampDetail(st);
 
       card.innerHTML = `
         <div class="sello-img-box">${stamp ? stamp.svg : ''}</div>
-        <div class="sello-name">${s}</div>
+        <div class="sello-name">${st}</div>
       `;
       grid.appendChild(card);
     });
@@ -2468,133 +2434,195 @@
   function openStatsModal() {
     playSoundAction();
     const grid = document.getElementById('statsGrid');
-    const totalDist = calculateTotalDistance();
-    let totalSec = 0, totalRestSec = 0, totalAscent = 0;
+    
+    let totalDist = 0;
+    let totalTimeSec = 0;
+    let totalAscent = 0;
 
     records.forEach(r => {
-      totalSec += (r.duration || 0);
-      totalRestSec += (r.restDuration || 0);
       const parts = r.route.split(' ➔ ');
       if (parts.length === 2) {
+        const d = Math.abs((stationDistances[parts[1]] || 0) - (stationDistances[parts[0]] || 0));
+        totalDist += d;
         totalAscent += calculateAscent(parts[0], parts[1]);
       }
+      totalTimeSec += (r.duration || 0);
     });
 
-    const avgPace = calculatePace(totalSec, totalDist);
+    const totalHrs = (totalTimeSec / 3600).toFixed(1);
+    const overallPace = calculatePace(totalTimeSec, totalDist);
 
     grid.innerHTML = `
       <div class="stat-box">
-        <div class="stat-value">${totalDist.toFixed(1)} km</div>
-        <div class="stat-label">累積行走距離</div>
+        <span class="stat-value">${records.length}</span>
+        <span class="stat-label">完成段數</span>
       </div>
       <div class="stat-box">
-        <div class="stat-value">${formatDuration(totalSec)}</div>
-        <div class="stat-label">累積行走時間</div>
+        <span class="stat-value">${totalDist.toFixed(1)} km</span>
+        <span class="stat-label">總步行距離</span>
       </div>
       <div class="stat-box">
-        <div class="stat-value">${totalAscent} m</div>
-        <div class="stat-label">累積海拔爬升</div>
+        <span class="stat-value">${totalHrs} hrs</span>
+        <span class="stat-label">總行走時間</span>
       </div>
       <div class="stat-box">
-        <div class="stat-value">${avgPace}</div>
-        <div class="stat-label">平均行走步速</div>
+        <span class="stat-value">${totalAscent} m</span>
+        <span class="stat-label">累計爬升</span>
+      </div>
+      <div class="stat-box" style="grid-column: span 2;">
+        <span class="stat-value">${overallPace}</span>
+        <span class="stat-label">整體平均步速</span>
       </div>
     `;
 
     openModal('statsModal');
   }
 
-  function formatDuration(sec) {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    return `${m}m ${s}s`;
+  /* 分享成就卡 png 至手機 */
+  function generateShareCard() {
+    playSoundAction();
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#FAF6EF';
+    ctx.fillRect(0, 0, 800, 1000);
+
+    ctx.strokeStyle = '#723C13';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(20, 20, 760, 960);
+
+    ctx.fillStyle = '#8B2014';
+    ctx.font = '900 38px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CAMINO PRIMITIVO', 400, 100);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.font = '800 22px Montserrat, sans-serif';
+    ctx.fillText('朝聖之路 · 行走成就紀錄', 400, 140);
+
+    let totalDist = 0, totalTimeSec = 0, totalAscent = 0;
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        totalDist += Math.abs((stationDistances[parts[1]] || 0) - (stationDistances[parts[0]] || 0));
+        totalAscent += calculateAscent(parts[0], parts[1]);
+      }
+      totalTimeSec += (r.duration || 0);
+    });
+
+    const overallPace = calculatePace(totalTimeSec, totalDist);
+
+    ctx.fillStyle = '#E2D7C5';
+    ctx.fillRect(80, 200, 640, 520);
+    ctx.strokeStyle = '#C4B59D';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(80, 200, 640, 520);
+
+    ctx.fillStyle = '#8B2014';
+    ctx.font = '900 48px Montserrat, sans-serif';
+    ctx.fillText(`${totalDist.toFixed(1)} KM`, 400, 280);
+    ctx.fillStyle = '#6E5D54';
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText('累計徒步距離', 400, 315);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.font = '900 36px Montserrat, sans-serif';
+    ctx.fillText(`${(totalTimeSec / 3600).toFixed(1)} Hours`, 400, 410);
+    ctx.fillStyle = '#6E5D54';
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText('總行走時間', 400, 445);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.font = '900 36px Montserrat, sans-serif';
+    ctx.fillText(`${totalAscent} M`, 400, 540);
+    ctx.fillStyle = '#6E5D54';
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText('累計海拔爬升', 400, 575);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.font = '900 32px Montserrat, sans-serif';
+    ctx.fillText(overallPace, 400, 650);
+    ctx.fillStyle = '#6E5D54';
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText('平均步速', 400, 685);
+
+    ctx.fillStyle = '#8B2014';
+    ctx.font = '900 28px Cinzel, serif';
+    ctx.fillText('¡BUEN CAMINO!', 400, 800);
+
+    const todayStr = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    ctx.fillStyle = '#6E5D54';
+    ctx.font = '800 18px Montserrat, sans-serif';
+    ctx.fillText(`DATE: ${todayStr}`, 400, 840);
+
+    saveCanvasToGallery(canvas, 'Camino_Achievement_Card.png');
   }
 
   function openEditRecordModal(id) {
     playSoundAction();
-    const r = records.find(item => item.id === id);
-    if (!r) return;
-
     editingRecordId = id;
-    pendingPhotoData = r.photo || "";
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
 
-    const parts = r.route.split(' ➔ ');
-    const sStartSelect = document.getElementById('editStartSelect');
-    const sEndSelect = document.getElementById('editEndSelect');
+    const parts = rec.route.split(' ➔ ');
+    const sSel = document.getElementById('editStartSelect');
+    const eSel = document.getElementById('editEndSelect');
+    sSel.innerHTML = '';
+    eSel.innerHTML = '';
 
-    sStartSelect.innerHTML = '';
-    sEndSelect.innerHTML = '';
-
-    stations.forEach((st, idx) => {
-      if (idx < stations.length - 1) {
-        const opt = document.createElement('option');
-        opt.value = st;
-        opt.innerText = st;
-        if (st === parts[0]) opt.selected = true;
-        sStartSelect.appendChild(opt);
-      }
-      if (idx > 0) {
-        const opt = document.createElement('option');
-        opt.value = st;
-        opt.innerText = st;
-        if (st === parts[1]) opt.selected = true;
-        sEndSelect.appendChild(opt);
-      }
+    stations.forEach(st => {
+      sSel.innerHTML += `<option value="${st}" ${st === parts[0] ? 'selected' : ''}>${st}</option>`;
+      eSel.innerHTML += `<option value="${st}" ${st === parts[1] ? 'selected' : ''}>${st}</option>`;
     });
 
-    const dur = r.duration || 0;
-    document.getElementById('editHrs').value = Math.floor(dur / 3600);
-    document.getElementById('editMins').value = Math.floor((dur % 3600) / 60);
-    document.getElementById('editSecs').value = dur % 60;
+    const d = rec.duration || 0;
+    document.getElementById('editHrs').value = Math.floor(d / 3600);
+    document.getElementById('editMins').value = Math.floor((d % 3600) / 60);
+    document.getElementById('editSecs').value = d % 60;
 
-    const rDur = r.restDuration || 0;
-    document.getElementById('editRestHrs').value = Math.floor(rDur / 3600);
-    document.getElementById('editRestMins').value = Math.floor((rDur % 3600) / 60);
-    document.getElementById('editRestSecs').value = rDur % 60;
+    const rd = rec.restDuration || 0;
+    document.getElementById('editRestHrs').value = Math.floor(rd / 3600);
+    document.getElementById('editRestMins').value = Math.floor((rd % 3600) / 60);
+    document.getElementById('editRestSecs').value = rd % 60;
 
-    document.getElementById('editNote').value = r.note || '';
+    document.getElementById('editNote').value = rec.note || '';
 
-    const imgPreview = document.getElementById('editPhotoPreview');
-    const rmBtn = document.getElementById('editPhotoRemoveBtn');
-    if (r.photo) {
-      imgPreview.src = r.photo;
-      imgPreview.classList.add('show');
-      rmBtn.classList.add('show');
+    const preview = document.getElementById('editPhotoPreview');
+    const removeBtn = document.getElementById('editPhotoRemoveBtn');
+    pendingPhotoData = rec.photo || null;
+
+    if (rec.photo) {
+      preview.src = rec.photo;
+      preview.classList.add('show');
+      removeBtn.classList.add('show');
     } else {
-      imgPreview.src = '';
-      imgPreview.classList.remove('show');
-      rmBtn.classList.remove('show');
+      preview.src = '';
+      preview.classList.remove('show');
+      removeBtn.classList.remove('show');
     }
+    document.getElementById('editPhotoInput').value = '';
 
     recalcEditStats();
     openModal('editRecordModal');
   }
 
   function recalcEditStats() {
-    const sStart = document.getElementById('editStartSelect').value;
-    const sEnd = document.getElementById('editEndSelect').value;
+    const sVal = document.getElementById('editStartSelect').value;
+    const eVal = document.getElementById('editEndSelect').value;
 
-    const iStart = stations.indexOf(sStart);
-    const iEnd = stations.indexOf(sEnd);
+    const h = parseInt(document.getElementById('editHrs').value) || 0;
+    const m = parseInt(document.getElementById('editMins').value) || 0;
+    const s = parseInt(document.getElementById('editSecs').value) || 0;
+    const totalSec = h * 3600 + m * 60 + s;
 
-    if (iStart >= iEnd) {
-      document.getElementById('editAscentDisplay').innerText = "-- m";
-      document.getElementById('editPaceDisplay').innerText = "-- min/km";
-      return;
-    }
+    const dist = (stationDistances[eVal] !== undefined && stationDistances[sVal] !== undefined)
+      ? Math.abs(stationDistances[eVal] - stationDistances[sVal]) : 0;
 
-    const dist = Math.abs(stationDistances[sEnd] - stationDistances[sStart]);
-    const ascent = calculateAscent(sStart, sEnd);
-
-    const h = parseInt(document.getElementById('editHrs').value || 0, 10);
-    const m = parseInt(document.getElementById('editMins').value || 0, 10);
-    const s = parseInt(document.getElementById('editSecs').value || 0, 10);
-    const durSec = h * 3600 + m * 60 + s;
+    const ascent = calculateAscent(sVal, eVal);
+    const pace = calculatePace(totalSec, dist);
 
     document.getElementById('editAscentDisplay').innerText = `${ascent} m`;
-    document.getElementById('editPaceDisplay').innerText = calculatePace(durSec, dist);
+    document.getElementById('editPaceDisplay').innerText = pace;
   }
 
   function handlePhotoInput(e) {
@@ -2602,7 +2630,7 @@
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = function(evt) {
       const img = new Image();
       img.onload = function() {
         const canvas = document.createElement('canvas');
@@ -2616,82 +2644,187 @@
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-
         pendingPhotoData = canvas.toDataURL('image/jpeg', 0.7);
 
-        const imgPreview = document.getElementById('editPhotoPreview');
-        imgPreview.src = pendingPhotoData;
-        imgPreview.classList.add('show');
+        const preview = document.getElementById('editPhotoPreview');
+        preview.src = pendingPhotoData;
+        preview.classList.add('show');
         document.getElementById('editPhotoRemoveBtn').classList.add('show');
       };
-      img.src = event.target.result;
+      img.src = evt.target.result;
     };
     reader.readAsDataURL(file);
   }
 
   function removeEditPhoto() {
-    pendingPhotoData = "";
-    document.getElementById('editPhotoInput').value = "";
-    document.getElementById('editPhotoPreview').src = "";
-    document.getElementById('editPhotoPreview').classList.remove('show');
+    playSoundAction();
+    pendingPhotoData = null;
+    const preview = document.getElementById('editPhotoPreview');
+    preview.src = '';
+    preview.classList.remove('show');
     document.getElementById('editPhotoRemoveBtn').classList.remove('show');
+    document.getElementById('editPhotoInput').value = '';
   }
 
   function saveEditRecord() {
     playSoundAction();
-    const r = records.find(item => item.id === editingRecordId);
-    if (!r) return;
+    const rec = records.find(r => r.id === editingRecordId);
+    if (!rec) return;
 
-    const sStart = document.getElementById('editStartSelect').value;
-    const sEnd = document.getElementById('editEndSelect').value;
+    const sVal = document.getElementById('editStartSelect').value;
+    const eVal = document.getElementById('editEndSelect').value;
 
-    if (stations.indexOf(sStart) >= stations.indexOf(sEnd)) {
-      alert("終點必須在起點之後！");
-      return;
-    }
+    const h = parseInt(document.getElementById('editHrs').value) || 0;
+    const m = parseInt(document.getElementById('editMins').value) || 0;
+    const s = parseInt(document.getElementById('editSecs').value) || 0;
+    rec.duration = h * 3600 + m * 60 + s;
 
-    const h = parseInt(document.getElementById('editHrs').value || 0, 10);
-    const m = parseInt(document.getElementById('editMins').value || 0, 10);
-    const s = parseInt(document.getElementById('editSecs').value || 0, 10);
+    const rh = parseInt(document.getElementById('editRestHrs').value) || 0;
+    const rm = parseInt(document.getElementById('editRestMins').value) || 0;
+    const rs = parseInt(document.getElementById('editRestSecs').value) || 0;
+    rec.restDuration = rh * 3600 + rm * 60 + rs;
 
-    const rh = parseInt(document.getElementById('editRestHrs').value || 0, 10);
-    const rm = parseInt(document.getElementById('editRestMins').value || 0, 10);
-    const rs = parseInt(document.getElementById('editRestSecs').value || 0, 10);
-
-    r.route = `${sStart} ➔ ${sEnd}`;
-    r.duration = h * 3600 + m * 60 + s;
-    r.restDuration = rh * 3600 + rm * 60 + rs;
-    r.note = document.getElementById('editNote').value;
-    r.photo = pendingPhotoData;
+    rec.route = `${sVal} ➔ ${eVal}`;
+    rec.note = document.getElementById('editNote').value;
+    rec.photo = pendingPhotoData;
 
     saveRecords();
     closeModal('editRecordModal');
+    renderJournal();
     updateProgressUI();
     updateMapMarkers();
-    renderCredencialGrid();
+  }
 
-    if (document.getElementById('journalModal').classList.contains('open')) {
+  function deleteFromEditModal() {
+    playSoundAction();
+    if (editingRecordId && confirm('確定要刪除這筆紀錄嗎？')) {
+      records = records.filter(r => r.id !== editingRecordId);
+      saveRecords();
+      closeModal('editRecordModal');
       renderJournal();
+      updateProgressUI();
+      updateMapMarkers();
     }
   }
 
   function deleteSingleRecord(id) {
     playSoundAction();
-    if (confirm("確定要刪除這筆行走紀錄嗎？")) {
+    if (confirm('確定要刪除這筆紀錄嗎？')) {
       records = records.filter(r => r.id !== id);
       saveRecords();
+      renderJournal();
       updateProgressUI();
       updateMapMarkers();
-      renderCredencialGrid();
-      renderJournal();
     }
   }
 
-  function deleteFromEditModal() {
-    if (editingRecordId) {
-      deleteSingleRecord(editingRecordId);
-      closeModal('editRecordModal');
-    }
+  function saveRecords() {
+    localStorage.setItem('camino_records', JSON.stringify(records));
+  }
+
+  function formatDuration(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}小時 ${m}分 ${s}秒`;
+    return `${m}分 ${s}秒`;
+  }
+
+  function openCelebration() {
+    playSoundAction();
+    document.getElementById('celebrationOverlay').classList.add('open');
+  }
+
+  function closeCelebration() {
+    playSoundAction();
+    document.getElementById('celebrationOverlay').classList.remove('open');
+  }
+
+  /* 分享完證證書 png 至手機 */
+  function downloadCompostela() {
+    playSoundAction();
+    const canvas = document.getElementById('compostelaCanvas');
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#FAF6EF';
+    ctx.fillRect(0, 0, 1000, 1400);
+
+    ctx.strokeStyle = '#8B2014';
+    ctx.lineWidth = 16;
+    ctx.strokeRect(30, 30, 940, 1340);
+    ctx.strokeStyle = '#E5A93C';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(46, 46, 908, 1308);
+
+    ctx.fillStyle = '#8B2014';
+    ctx.font = '900 52px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('COMPOSTELA', 500, 160);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.font = '800 24px Cinzel, serif';
+    ctx.fillText('CAPITULUM METROPOLITANAE CATHEDRALIS SANTIAGI', 500, 210);
+
+    ctx.fillStyle = '#723C13';
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText('— CAMINO PRIMITIVO OFFICIAL CERTIFICATE —', 500, 260);
+
+    ctx.fillStyle = '#2B1810';
+    ctx.font = '800 22px Montserrat, sans-serif';
+    const lines = [
+      'Devotionis affectu motus, viam antiquissimam',
+      'a Regia Civitate Oveto usque ad Sanctum Iacobum',
+      'pedestri itinere feliciter peregit.',
+      '',
+      '以此證明朝聖者懷抱虔誠之心，',
+      '自阿斯圖里亞斯古都奧維耶多啟程，',
+      '徒步翻越群山，順利完成最古老之原始之路，',
+      '順利抵達聖地雅哥德孔波斯特拉大教堂。'
+    ];
+
+    let startY = 360;
+    lines.forEach(l => {
+      ctx.fillText(l, 500, startY);
+      startY += 42;
+    });
+
+    let totalDist = 0, totalTimeSec = 0, totalAscent = 0;
+    records.forEach(r => {
+      const parts = r.route.split(' ➔ ');
+      if (parts.length === 2) {
+        totalDist += Math.abs((stationDistances[parts[1]] || 0) - (stationDistances[parts[0]] || 0));
+        totalAscent += calculateAscent(parts[0], parts[1]);
+      }
+      totalTimeSec += (r.duration || 0);
+    });
+
+    ctx.fillStyle = '#E2D7C5';
+    ctx.fillRect(150, 800, 700, 280);
+    ctx.strokeStyle = '#C4B59D';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(150, 800, 700, 280);
+
+    ctx.fillStyle = '#8B2014';
+    ctx.font = '900 36px Montserrat, sans-serif';
+    ctx.fillText(`TOTAL DISTANCE: ${totalDist.toFixed(1)} KM`, 500, 870);
+    ctx.fillText(`TOTAL TIME: ${(totalTimeSec / 3600).toFixed(1)} HOURS`, 500, 940);
+    ctx.fillText(`TOTAL ASCENT: ${totalAscent} M`, 500, 1010);
+
+    ctx.fillStyle = '#E5A93C';
+    ctx.beginPath();
+    ctx.arc(500, 1180, 50, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#8B2014';
+    ctx.font = '900 24px Cinzel, serif';
+    ctx.fillText('SEAL', 500, 1188);
+
+    const todayStr = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    ctx.fillStyle = '#6E5D54';
+    ctx.font = '800 20px Montserrat, sans-serif';
+    ctx.fillText(`ISSUED ON: ${todayStr}`, 500, 1280);
+
+    saveCanvasToGallery(canvas, 'Camino_Compostela_Certificate.png');
   }
 
   function openPhotoLightbox(src, e) {
@@ -2704,91 +2837,6 @@
   function closePhotoLightbox() {
     playSoundAction();
     document.getElementById('photoLightbox').classList.remove('open');
-  }
-
-  function triggerCelebration() {
-    playSoundAction();
-    document.getElementById('celebrationOverlay').classList.add('open');
-  }
-
-  function closeCelebration() {
-    playSoundAction();
-    document.getElementById('celebrationOverlay').classList.remove('open');
-  }
-
-  function generateShareCard() {
-    playSoundAction();
-    const canvas = document.getElementById('shareCanvas');
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = "#FAF6EF";
-    ctx.fillRect(0, 0, 800, 1000);
-
-    ctx.strokeStyle = "#723C13";
-    ctx.lineWidth = 12;
-    ctx.strokeRect(20, 20, 760, 960);
-
-    ctx.fillStyle = "#8B2014";
-    ctx.font = "900 36px 'Cinzel', serif";
-    ctx.textAlign = "center";
-    ctx.fillText("CAMINO PRIMITIVO", 400, 100);
-
-    ctx.fillStyle = "#6E5D54";
-    ctx.font = "800 20px 'Montserrat', sans-serif";
-    ctx.fillText("朝聖之路 · 行走成就紀錄", 400, 140);
-
-    const totalDist = calculateTotalDistance();
-    let totalSec = 0, totalAscent = 0;
-    records.forEach(r => {
-      totalSec += (r.duration || 0);
-      const parts = r.route.split(' ➔ ');
-      if (parts.length === 2) totalAscent += calculateAscent(parts[0], parts[1]);
-    });
-
-    ctx.fillStyle = "#E2D7C5";
-    ctx.fillRect(80, 200, 640, 160);
-    ctx.strokeStyle = "#C4B59D";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(80, 200, 640, 160);
-
-    ctx.fillStyle = "#8B2014";
-    ctx.font = "900 48px 'Montserrat', sans-serif";
-    ctx.fillText(`${totalDist.toFixed(1)} KM`, 400, 270);
-
-    ctx.fillStyle = "#2B1810";
-    ctx.font = "800 20px 'Montserrat', sans-serif";
-    ctx.fillText(`總時間: ${formatDuration(totalSec)}  |  總爬升: ${totalAscent} m`, 400, 320);
-
-    const link = document.createElement('a');
-    link.download = 'Camino_Achievement.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }
-
-  function downloadCompostela() {
-    playSoundAction();
-    const canvas = document.getElementById('compostelaCanvas');
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = "#F7F3EB";
-    ctx.fillRect(0, 0, 1000, 1400);
-
-    ctx.strokeStyle = "#8B2014";
-    ctx.lineWidth = 16;
-    ctx.strokeRect(30, 30, 940, 1340);
-
-    ctx.fillStyle = "#2B1810";
-    ctx.font = "900 42px 'Cinzel', serif";
-    ctx.textAlign = "center";
-    ctx.fillText("COMPOSTELA", 500, 180);
-
-    ctx.font = "800 22px 'Montserrat', sans-serif";
-    ctx.fillText("CAPITULUM METROPOLITANAE ECCLESIAE COMPOSTELLANAE", 500, 240);
-
-    const link = document.createElement('a');
-    link.download = 'Compostela_Certificate.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
   }
 </script>
 </body>
